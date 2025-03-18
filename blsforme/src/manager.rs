@@ -60,7 +60,7 @@ impl<'a> Manager<'a> {
         let etc_entries = fs::read_dir(&etc_cmdline_d)
             .map(|i| {
                 i.filter_map(|p| p.ok())
-                    .filter(|d| d.path().extension().map_or(false, |e| e == "cmdline"))
+                    .filter(|d| d.path().extension().is_some_and(|e| e == "cmdline"))
                     .map(|d| d.path().clone())
             })
             .into_iter()
