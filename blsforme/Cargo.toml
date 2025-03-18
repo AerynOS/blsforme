@@ -12,6 +12,6 @@ nix.workspace = true
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-superblock = { path = "../crates/superblock" }
+superblock.workspace = true
 topology = { path = "../crates/topology" }
 gpt.workspace = true

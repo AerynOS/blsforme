@@ -6,7 +6,6 @@
 
 use std::{
     fs,
-    io::{Cursor, Read},
     path::{Path, PathBuf},
 };
 
@@ -114,14 +113,11 @@ impl Probe {
     }
 
     /// Scan superblock of the device for `UUID=` parameter
-    pub fn get_device_superblock(&self, path: impl AsRef<Path>) -> Result<Box<dyn Superblock>, super::Error> {
+    pub fn get_device_superblock(&self, path: impl AsRef<Path>) -> Result<Superblock, super::Error> {
         let path = path.as_ref();
         log::trace!("Querying superblock information for {}", path.display());
-        let fi = fs::File::open(path)?;
-        let mut buffer: Vec<u8> = Vec::with_capacity(2 * 1024 * 1024);
-        fi.take(2 * 1024 * 1024).read_to_end(&mut buffer)?;
-        let mut cursor = Cursor::new(&buffer);
-        let sb = superblock::for_reader(&mut cursor)?;
+        let mut fi = fs::File::open(path)?;
+        let sb = Superblock::from_reader(&mut fi)?;
         log::trace!("detected superblock: {}", sb.kind());
 
         Ok(sb)

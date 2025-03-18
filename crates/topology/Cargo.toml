@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 thiserror.workspace = true
-superblock = { path = "../superblock" }
+superblock.workspace = true
 nix.workspace = true
 log.workspace = true
 gpt.workspace = true
