@@ -219,7 +219,7 @@ fn check_permissions() -> color_eyre::Result<()> {
 fn main() -> color_eyre::Result<()> {
     let host_os = scan_os_release("/").expect("Cannot determine running Linux distro");
     color_eyre::config::HookBuilder::default()
-        .issue_url("https://github.com/serpent-os/blsforme/issues/new")
+        .issue_url("https://github.com/AerynOS/blsforme/issues/new")
         .add_issue_metadata("tool-context", "standalone (blsctl)")
         .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
         .add_issue_metadata("os-release-name", host_os.name)
