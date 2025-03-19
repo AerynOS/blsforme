@@ -108,10 +108,9 @@ impl<'a> Entry<'a> {
 
     /// Return an entry ID, suitable for `.conf` generation
     pub fn id(&self, schema: &Schema) -> String {
-        // TODO: For BLS schema, grab something even uniquer (TM)
         let id = match schema {
             Schema::Legacy { os_release, .. } => os_release.name.clone(),
-            Schema::Blsforme { os_release } => os_release.id.clone(),
+            _ => schema.os_id(),
         };
         if let Some(state_id) = self.state_id.as_ref() {
             format!("{id}-{version}-{state_id}", version = &self.kernel.version)
@@ -130,7 +129,7 @@ impl<'a> Entry<'a> {
                 .file_name()
                 .map(|f| f.to_string_lossy())
                 .map(|filename| format!("kernel-{}", filename)),
-            Schema::Blsforme { .. } => Some(format!("{}/vmlinuz", self.kernel.version)),
+            _ => Some(format!("{}/vmlinuz", self.kernel.version)),
         }
     }
 
@@ -146,7 +145,7 @@ impl<'a> Entry<'a> {
                     .map(|filename| format!("initrd-{}", filename)),
                 _ => None,
             },
-            Schema::Blsforme { .. } => {
+            _ => {
                 let filename = asset.path.file_name().map(|f| f.to_string_lossy())?;
                 match asset.kind {
                     crate::AuxiliaryKind::InitRD => Some(format!("{}/{}", &self.kernel.version, filename)),

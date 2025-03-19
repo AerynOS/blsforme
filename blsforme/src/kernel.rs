@@ -12,18 +12,22 @@ use std::{
 use serde::Deserialize;
 
 use crate::{os_release::OsRelease, Error};
+use os_info::OSInfo;
 
 /// Control kernel discovery mechanism
 #[derive(Debug)]
-pub enum Schema<'a> {
+pub enum Schema {
     /// Legacy (clr-boot-manager style) schema
     Legacy {
-        os_release: &'a OsRelease,
+        os_release: Box<OsRelease>,
         namespace: &'static str,
     },
 
-    /// Modern schema (actually has a schema.)
-    Blsforme { os_release: &'a OsRelease },
+    /// Legacy, using only an os-release file
+    Blsforme { os_release: Box<OsRelease> },
+
+    /// Modern distribution using os-info.json
+    OsInfo { os_info: Box<OSInfo> },
 }
 
 /// `boot.json` deserialise support
@@ -99,21 +103,54 @@ pub struct AuxiliaryFile {
     pub kind: AuxiliaryKind,
 }
 
-impl Schema<'_> {
+impl Schema {
     /// Given a set of kernel-like paths, yield all potential kernels within them
     /// This should be a set of `/usr/lib/kernel` paths. Use glob or appropriate to discover.
     pub fn discover_system_kernels(&self, paths: impl Iterator<Item = impl AsRef<Path>>) -> Result<Vec<Kernel>, Error> {
         match &self {
             Schema::Legacy { namespace, .. } => Self::legacy_kernels(namespace, paths),
             Schema::Blsforme { .. } => Self::blsforme_kernels(paths),
+            Schema::OsInfo { .. } => Self::blsforme_kernels(paths),
         }
     }
 
-    /// Grab the os-release reference
-    pub fn os_release(&self) -> &OsRelease {
-        match &self {
-            Schema::Legacy { os_release, .. } => os_release,
-            Schema::Blsforme { os_release } => os_release,
+    /// Retrieve the OS name
+    pub fn os_name(&self) -> String {
+        match self {
+            Schema::Legacy { os_release, .. } => os_release.name.clone(),
+            Schema::Blsforme { os_release } => os_release.name.clone(),
+            Schema::OsInfo { os_info } => os_info.metadata.identity.name.clone(),
+        }
+        .to_string()
+    }
+
+    /// Retrieve the namespace for files on the boot partition(s)
+    pub fn os_namespace(&self) -> String {
+        match self {
+            Schema::Legacy { namespace, .. } => namespace.to_string(),
+            Schema::Blsforme { os_release } => os_release.id.clone(),
+            Schema::OsInfo { os_info } => os_info.metadata.identity.id.clone(),
+        }
+    }
+
+    /// Retrieve the OS ID (ie `serpent-os`, `aerynos`, etc)
+    /// This is the `ID` field in os-release
+    pub fn os_id(&self) -> String {
+        match self {
+            Schema::Legacy { os_release, .. } => os_release.id.clone(),
+            Schema::Blsforme { os_release } => os_release.id.clone(),
+            Schema::OsInfo { os_info } => os_info.metadata.identity.id.clone(),
+        }
+        .to_string()
+    }
+
+    /// Retrieve display name for the OS
+    /// This is the `PRETTY_NAME` field in os-release, used for display purposes
+    pub fn os_display_name(&self) -> Option<String> {
+        match self {
+            Schema::Legacy { os_release, .. } => os_release.meta.pretty_name.clone(),
+            Schema::Blsforme { os_release } => os_release.meta.pretty_name.clone(),
+            Schema::OsInfo { os_info } => Some(os_info.metadata.identity.display.clone()),
         }
     }
 

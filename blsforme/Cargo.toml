@@ -9,6 +9,7 @@ edition = "2021"
 blake3.workspace = true
 log.workspace = true
 nix.workspace = true
+os-info.workspace = true
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true

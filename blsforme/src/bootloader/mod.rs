@@ -40,7 +40,7 @@ pub enum Bootloader<'a, 'b> {
 impl<'a, 'b> Bootloader<'a, 'b> {
     /// Construct the firmware-appropriate bootloader manager
     pub(crate) fn new(
-        schema: &'a Schema<'a>,
+        schema: &'a Schema,
         assets: &'b [PathBuf],
         mounts: &'a Mounts,
         firmware: &Firmware,

@@ -94,28 +94,53 @@ fn scan_os_release(root: impl AsRef<Path>) -> color_eyre::Result<OsRelease> {
     ))
 }
 
+/// Scan the rootfs for os-info.json
+fn scan_os_info(root: impl AsRef<Path>) -> color_eyre::Result<os_info::OSInfo> {
+    let root = root.as_ref();
+    let query_paths = vec![
+        root.join("run").join("os-info.json"),
+        root.join("etc").join("os-info.json"),
+        root.join("usr").join("lib").join("os-info.json"),
+    ];
+
+    for p in query_paths {
+        if p.exists() {
+            log::trace!("Reading os-info from: {}", p.display());
+            let os = os_info::load_os_info_from_path(p)?;
+            return Ok(os);
+        }
+    }
+    Err(eyre!(
+        "Failed to determine the Linux distribution by scanning os-info.json"
+    ))
+}
+
 /// Query the schema we need to use for pre BLS schema installations
-fn query_schema(os_release: &OsRelease) -> color_eyre::Result<Schema> {
+fn query_schema(os_release: OsRelease) -> color_eyre::Result<Schema> {
     match os_release.id.as_str() {
         "solus" => {
             if os_release.version.name.as_ref().is_some_and(|v| v.starts_with("4.")) {
                 log::trace!("Legacy schema due to Solus 4 installation");
                 Ok(Schema::Legacy {
                     namespace: "com.solus-project",
-                    os_release,
+                    os_release: Box::new(os_release),
                 })
             } else {
-                Ok(Schema::Blsforme { os_release })
+                Ok(Schema::Blsforme {
+                    os_release: Box::new(os_release),
+                })
             }
         }
         "clear-linux-os" => {
             log::trace!("Legacy schema due to Clear Linux OS installation");
             Ok(Schema::Legacy {
                 namespace: "org.clearlinux",
-                os_release,
+                os_release: Box::new(os_release),
             })
         }
-        _ => Ok(Schema::Blsforme { os_release }),
+        _ => Ok(Schema::Blsforme {
+            os_release: Box::new(os_release),
+        }),
     }
 }
 
@@ -125,9 +150,17 @@ fn inspect_root(config: &Configuration) -> color_eyre::Result<()> {
         return Ok(());
     }
 
-    let os_release = scan_os_release(config.root.path())?;
-    let schema = query_schema(&os_release)?;
-    log::info!("Root Schema: {schema:?}");
+    let osi = scan_os_info(config.root.path());
+    let osrel = scan_os_release(config.root.path());
+
+    let schema = if osi.is_ok() {
+        Schema::OsInfo {
+            os_info: Box::new(osi?),
+        }
+    } else {
+        let os_release = osrel?;
+        query_schema(os_release)?
+    };
 
     let paths = glob::glob(&format!("{}/usr/lib/kernel/*", config.root.path().display()))?
         .chain(glob::glob(&format!(

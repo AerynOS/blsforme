@@ -26,7 +26,7 @@ pub struct Loader<'a, 'b> {
     assets: &'b [PathBuf],
     mounts: &'a Mounts,
 
-    schema: &'a Schema<'a>,
+    schema: &'a Schema,
     kernel_dir: PathBuf,
     boot_root: PathBuf,
 }
@@ -42,7 +42,7 @@ struct InstallResult {
 
 impl<'a, 'b> Loader<'a, 'b> {
     /// Construct a new systemd boot loader manager
-    pub(super) fn new(schema: &'a Schema<'a>, assets: &'b [PathBuf], mounts: &'a Mounts) -> Result<Self, super::Error> {
+    pub(super) fn new(schema: &'a Schema, assets: &'b [PathBuf], mounts: &'a Mounts) -> Result<Self, super::Error> {
         let boot_root = if let Some(xbootldr) = mounts.xbootldr.as_ref() {
             xbootldr.clone()
         } else if let Some(esp) = mounts.esp.as_ref() {
@@ -51,12 +51,9 @@ impl<'a, 'b> Loader<'a, 'b> {
             return Err(super::Error::MissingMount("ESP (/efi)"));
         };
 
-        let kernel_dir = match schema {
-            Schema::Legacy { namespace, .. } => boot_root.join_insensitive("EFI").join_insensitive(namespace),
-            Schema::Blsforme { os_release } => boot_root
-                .join_insensitive("EFI")
-                .join_insensitive(os_release.id.clone()),
-        };
+        let kernel_dir = boot_root
+            .join_insensitive("EFI")
+            .join_insensitive(schema.os_namespace());
 
         Ok(Self {
             schema,
@@ -132,7 +129,7 @@ impl<'a, 'b> Loader<'a, 'b> {
 
         let schema_prefix = match self.schema {
             Schema::Legacy { os_release, .. } => os_release.name.clone(),
-            Schema::Blsforme { os_release } => os_release.id.clone(),
+            _ => self.schema.os_id(),
         };
 
         let loader_dir = self.boot_root.join_insensitive("loader").join_insensitive("entries");
@@ -269,10 +266,10 @@ impl<'a, 'b> Loader<'a, 'b> {
                 .collect::<String>();
             format!("\n{}", initrds)
         };
-        let title = if let Some(pretty) = self.schema.os_release().meta.pretty_name.as_ref() {
+        let title = if let Some(pretty) = self.schema.os_display_name() {
             format!("{pretty} ({})", entry.kernel.version)
         } else {
-            format!("{} ({})", self.schema.os_release().name, entry.kernel.version)
+            format!("{} ({})", self.schema.os_name(), entry.kernel.version)
         };
         let vmlinuz = entry.installed_kernel_name(self.schema).expect("linux go boom");
         format!(

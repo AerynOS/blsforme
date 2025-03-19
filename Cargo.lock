@@ -160,6 +160,7 @@ dependencies = [
  "glob",
  "log",
  "nix",
+ "os-info",
  "pretty_env_logger",
  "thiserror",
  "topology",
@@ -173,6 +174,7 @@ dependencies = [
  "gpt",
  "log",
  "nix",
+ "os-info",
  "serde",
  "serde_json",
  "superblock",
@@ -215,8 +217,10 @@ checksum = "1a7964611d71df112cb1730f2ee67324fcf4d0fc6606acbbe9bfe06df124637c"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-link",
 ]
 
@@ -836,6 +840,17 @@ name = "once_cell"
 version = "1.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
+
+[[package]]
+name = "os-info"
+version = "0.1.0"
+source = "git+https://github.com/AerynOS/os-info?rev=bf08ac4067f64ba844ab26e548cf9f706726ff9b#bf08ac4067f64ba844ab26e548cf9f706726ff9b"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
 
 [[package]]
 name = "owo-colors"
