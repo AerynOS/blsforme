@@ -13,10 +13,7 @@ use std::{
 
 use blsforme::{os_release::OsRelease, BootJSON, Configuration, Entry, Manager, Root, Schema};
 use clap::{Parser, Subcommand};
-use color_eyre::{
-    eyre::{eyre, Ok},
-    Section,
-};
+use color_eyre::{eyre::eyre, Section};
 
 use pretty_env_logger::formatted_builder;
 
@@ -150,15 +147,12 @@ fn inspect_root(config: &Configuration) -> color_eyre::Result<()> {
         return Ok(());
     }
 
-    let osi = scan_os_info(config.root.path());
-    let osrel = scan_os_release(config.root.path());
-
-    let schema = if osi.is_ok() {
+    let schema = if let Ok(os_info) = scan_os_info(config.root.path()) {
         Schema::OsInfo {
-            os_info: Box::new(osi?),
+            os_info: Box::new(os_info),
         }
     } else {
-        let os_release = osrel?;
+        let os_release = scan_os_release(config.root.path())?;
         query_schema(os_release)?
     };
 
