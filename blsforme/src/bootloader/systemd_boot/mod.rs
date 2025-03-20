@@ -100,6 +100,18 @@ impl<'a, 'b> Loader<'a, 'b> {
             copy_atomic_vfat(source, dest)?;
         }
 
+        // Write the loader.conf file with default entry pattern based on namespace
+        let loader_conf_dir = self.boot_root.join_insensitive("loader");
+        let loader_conf_path = loader_conf_dir.join_insensitive("loader.conf");
+        if !loader_conf_dir.exists() {
+            create_dir_all(loader_conf_dir)?;
+        }
+
+        // Create a default pattern that matches all entries for our namespace
+        let namespace = self.schema.os_namespace();
+        let default_pattern = format!("default \"{namespace}*\"\n");
+        fs::write(loader_conf_path, default_pattern)?;
+
         Ok(())
     }
 
