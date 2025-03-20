@@ -844,7 +844,7 @@ checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 [[package]]
 name = "os-info"
 version = "0.1.0"
-source = "git+https://github.com/AerynOS/os-info?rev=bf08ac4067f64ba844ab26e548cf9f706726ff9b#bf08ac4067f64ba844ab26e548cf9f706726ff9b"
+source = "git+https://github.com/AerynOS/os-info?rev=862808097f40ab5c04bb4c9a7ea0869acc05d339#862808097f40ab5c04bb4c9a7ea0869acc05d339"
 dependencies = [
  "chrono",
  "serde",
