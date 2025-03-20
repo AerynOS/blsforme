@@ -129,28 +129,73 @@ impl<'a, 'b> Loader<'a, 'b> {
             installed_entries.push(installed);
         }
 
-        let schema_prefix = match self.schema {
-            Schema::Legacy { os_release, .. } => os_release.name.clone(),
-            _ => self.schema.os_id(),
+        self.cleanup_stale_entries(&installed_entries)?;
+
+        Ok(())
+    }
+
+    /// Clean up stale loader configs and kernel directories
+    fn cleanup_stale_entries(&self, installed_entries: &[InstallResult]) -> Result<(), super::Error> {
+        let all_namespaces = match self.schema {
+            Schema::OsInfo { os_info } => {
+                // Include all former identities
+                let mut old_ids = os_info
+                    .metadata
+                    .identity
+                    .former_identities
+                    .iter()
+                    .map(|i| i.id.clone())
+                    .collect::<Vec<_>>();
+                old_ids.push(os_info.metadata.identity.id.clone());
+                old_ids
+            }
+            _ => vec![self.schema.os_namespace()],
+        };
+
+        let all_prefixes = match self.schema {
+            Schema::OsInfo { os_info } => {
+                // Include all former identities
+                let mut old_ids = os_info
+                    .metadata
+                    .identity
+                    .former_identities
+                    .iter()
+                    .map(|i| i.id.clone())
+                    .collect::<Vec<_>>();
+                old_ids.push(os_info.metadata.identity.id.clone());
+                old_ids
+            }
+            Schema::Legacy { os_release, .. } => vec![os_release.name.clone()],
+            _ => vec![self.schema.os_id()],
         };
 
         let loader_dir = self.boot_root.join_insensitive("loader").join_insensitive("entries");
-        let loader_files = fs::read_dir(loader_dir)?
-            .filter_map(|d| d.ok())
-            .filter(|f| f.file_name().to_string_lossy().to_string().starts_with(&schema_prefix))
-            .map(|f| f.path())
-            .collect::<Vec<_>>();
 
-        let base_kernel_dir = self
-            .boot_root
-            .join_insensitive("EFI")
-            .join_insensitive(self.schema.os_namespace());
+        // Find all loader files that match any of our prefixes
+        let mut loader_files = Vec::new();
+        if let Ok(entries) = fs::read_dir(&loader_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                if all_prefixes.iter().any(|prefix| file_name.starts_with(prefix)) {
+                    loader_files.push(entry.path());
+                }
+            }
+        }
 
-        let kernel_dirs = fs::read_dir(&base_kernel_dir)?
-            .filter_map(|d| d.ok())
-            .filter(|f| f.file_type().map(|t| t.is_dir()).unwrap_or(false))
-            .map(|f| f.path())
-            .collect::<Vec<_>>();
+        // Check each namespace for kernel directories
+        let mut kernel_dirs = Vec::new();
+        for namespace in &all_namespaces {
+            let efi_dir = self.boot_root.join_insensitive("EFI").join_insensitive(namespace);
+            if efi_dir.exists() {
+                if let Ok(entries) = fs::read_dir(&efi_dir) {
+                    for entry in entries.filter_map(|e| e.ok()) {
+                        if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                            kernel_dirs.push(entry.path());
+                        }
+                    }
+                }
+            }
+        }
 
         let obsolete_loader_confs = loader_files
             .iter()
