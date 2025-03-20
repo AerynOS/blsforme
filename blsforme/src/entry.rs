@@ -28,6 +28,9 @@ pub struct Entry<'a> {
 
     /// Unique state ID for this entry
     pub(crate) state_id: Option<i32>,
+
+    /// Entry-specific schema for overriding the global schema
+    pub(crate) schema: Option<Schema>,
 }
 
 impl<'a> Entry<'a> {
@@ -38,6 +41,7 @@ impl<'a> Entry<'a> {
             cmdline: vec![],
             sysroot: None,
             state_id: None,
+            schema: None,
         }
     }
 
@@ -98,6 +102,15 @@ impl<'a> Entry<'a> {
         }
     }
 
+    /// With the given schema
+    /// Used by moss to override the global schema
+    pub fn with_schema(self, schema: Schema) -> Self {
+        Self {
+            schema: Some(schema),
+            ..self
+        }
+    }
+
     /// With the given cmdline entry
     /// Used by moss to inject a `moss.tx={}` parameter
     pub fn with_cmdline(self, entry: CmdlineEntry) -> Self {
@@ -108,9 +121,12 @@ impl<'a> Entry<'a> {
 
     /// Return an entry ID, suitable for `.conf` generation
     pub fn id(&self, schema: &Schema) -> String {
-        let id = match schema {
+        // Prefer internal schema if available
+        let effective_schema = self.schema.as_ref().unwrap_or(schema);
+
+        let id = match effective_schema {
             Schema::Legacy { os_release, .. } => os_release.name.clone(),
-            _ => schema.os_id(),
+            _ => effective_schema.os_id(),
         };
         if let Some(state_id) = self.state_id.as_ref() {
             format!("{id}-{version}-{state_id}", version = &self.kernel.version)
@@ -122,7 +138,10 @@ impl<'a> Entry<'a> {
     /// Generate an installed name for the kernel, used by bootloaders
     /// Right now this only returns CBM style IDs
     pub fn installed_kernel_name(&self, schema: &Schema) -> Option<String> {
-        match &schema {
+        // Prefer internal schema if available
+        let effective_schema = self.schema.as_ref().unwrap_or(schema);
+
+        match effective_schema {
             Schema::Legacy { .. } => self
                 .kernel
                 .image
@@ -136,7 +155,10 @@ impl<'a> Entry<'a> {
     /// Generate installed asset (aux) name, used by bootloaders
     /// Right now this only returns CBM style IDs
     pub fn installed_asset_name(&self, schema: &Schema, asset: &AuxiliaryFile) -> Option<String> {
-        match &schema {
+        // Prefer internal schema if available
+        let effective_schema = self.schema.as_ref().unwrap_or(schema);
+
+        match effective_schema {
             Schema::Legacy { .. } => match asset.kind {
                 crate::AuxiliaryKind::InitRD => asset
                     .path

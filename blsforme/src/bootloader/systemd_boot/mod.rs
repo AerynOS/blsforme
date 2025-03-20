@@ -27,7 +27,6 @@ pub struct Loader<'a, 'b> {
     mounts: &'a Mounts,
 
     schema: &'a Schema,
-    kernel_dir: PathBuf,
     boot_root: PathBuf,
 }
 
@@ -51,17 +50,20 @@ impl<'a, 'b> Loader<'a, 'b> {
             return Err(super::Error::MissingMount("ESP (/efi)"));
         };
 
-        let kernel_dir = boot_root
-            .join_insensitive("EFI")
-            .join_insensitive(schema.os_namespace());
-
         Ok(Self {
             schema,
             assets,
             mounts,
-            kernel_dir,
             boot_root,
         })
+    }
+
+    /// Get the kernel directory for a specific entry
+    fn get_kernel_dir(&self, entry: &Entry) -> PathBuf {
+        let effective_schema = entry.schema.as_ref().unwrap_or(self.schema);
+        self.boot_root
+            .join_insensitive("EFI")
+            .join_insensitive(effective_schema.os_namespace())
     }
 
     /// Sync bootloader to ESP (not XBOOTLDR..)
@@ -139,7 +141,12 @@ impl<'a, 'b> Loader<'a, 'b> {
             .map(|f| f.path())
             .collect::<Vec<_>>();
 
-        let kernel_dirs = fs::read_dir(&self.kernel_dir)?
+        let base_kernel_dir = self
+            .boot_root
+            .join_insensitive("EFI")
+            .join_insensitive(self.schema.os_namespace());
+
+        let kernel_dirs = fs::read_dir(&base_kernel_dir)?
             .filter_map(|d| d.ok())
             .filter(|f| f.file_type().map(|t| t.is_dir()).unwrap_or(false))
             .map(|f| f.path())
@@ -174,19 +181,24 @@ impl<'a, 'b> Loader<'a, 'b> {
 
     /// Install a kernel to the ESP or XBOOTLDR, write a config for it
     fn install(&self, cmdline: &str, entry: &Entry) -> Result<InstallResult, super::Error> {
+        let effective_schema = entry.schema.as_ref().unwrap_or(self.schema);
+
         let loader_id = self
             .boot_root
             .join_insensitive("loader")
             .join_insensitive("entries")
-            .join_insensitive(format!("{}.conf", entry.id(self.schema)));
+            .join_insensitive(format!("{}.conf", entry.id(effective_schema)));
         log::trace!("writing entry: {}", loader_id.display());
 
         let sysroot = entry.sysroot.clone().unwrap_or_default();
 
+        // Get kernel directory for this specific entry
+        let kernel_dir = self.get_kernel_dir(entry);
+
         // vmlinuz primary path
-        let vmlinuz = self.kernel_dir.join_insensitive(
+        let vmlinuz = kernel_dir.join_insensitive(
             entry
-                .installed_kernel_name(self.schema)
+                .installed_kernel_name(effective_schema)
                 .ok_or_else(|| super::Error::MissingFile("vmlinuz"))?,
         );
         // initrds requiring install
@@ -197,8 +209,7 @@ impl<'a, 'b> Loader<'a, 'b> {
             .filter_map(|asset| {
                 Some((
                     sysroot.join(&asset.path),
-                    self.kernel_dir
-                        .join_insensitive(entry.installed_asset_name(self.schema, asset)?),
+                    kernel_dir.join_insensitive(entry.installed_asset_name(effective_schema, asset)?),
                 ))
             })
             .collect::<Vec<_>>();
@@ -218,14 +229,9 @@ impl<'a, 'b> Loader<'a, 'b> {
             copy_atomic_vfat(source, dest)?;
         }
 
-        let loader_config = self.generate_entry(
-            self.kernel_dir
-                .strip_prefix(&self.boot_root)?
-                .to_string_lossy()
-                .as_ref(),
-            cmdline,
-            entry,
-        );
+        let asset_dir = kernel_dir.strip_prefix(&self.boot_root)?.to_string_lossy();
+
+        let loader_config = self.generate_entry(&asset_dir, cmdline, entry);
         log::trace!("loader config: {loader_config}");
 
         let entry_dir = self.boot_root.join_insensitive("loader").join_insensitive("entries");
@@ -250,6 +256,8 @@ impl<'a, 'b> Loader<'a, 'b> {
 
     /// Generate a usable loader config entry
     fn generate_entry(&self, asset_dir: &str, cmdline: &str, entry: &Entry) -> String {
+        let effective_schema = entry.schema.as_ref().unwrap_or(self.schema);
+
         let initrd = if entry.kernel.initrd.is_empty() {
             "\n".to_string()
         } else {
@@ -260,18 +268,18 @@ impl<'a, 'b> Loader<'a, 'b> {
                 .filter_map(|asset| {
                     Some(format!(
                         "\ninitrd /{asset_dir}/{}",
-                        entry.installed_asset_name(self.schema, asset)?
+                        entry.installed_asset_name(effective_schema, asset)?
                     ))
                 })
                 .collect::<String>();
             format!("\n{}", initrds)
         };
-        let title = if let Some(pretty) = self.schema.os_display_name() {
+        let title = if let Some(pretty) = effective_schema.os_display_name() {
             format!("{pretty} ({})", entry.kernel.version)
         } else {
-            format!("{} ({})", self.schema.os_name(), entry.kernel.version)
+            format!("{} ({})", effective_schema.os_name(), entry.kernel.version)
         };
-        let vmlinuz = entry.installed_kernel_name(self.schema).expect("linux go boom");
+        let vmlinuz = entry.installed_kernel_name(effective_schema).expect("linux go boom");
         format!(
             r###"title {title}
 linux /{asset_dir}/{}{}
@@ -283,7 +291,12 @@ options {cmdline}
 
     pub fn installed_kernels(&self) -> Result<Vec<Kernel>, super::Error> {
         let mut all_paths = vec![];
-        for entry in fs::read_dir(&self.kernel_dir)? {
+        let base_kernel_dir = self
+            .boot_root
+            .join_insensitive("EFI")
+            .join_insensitive(self.schema.os_namespace());
+
+        for entry in fs::read_dir(&base_kernel_dir)? {
             let entry = entry?;
             if !entry.file_type()?.is_dir() {
                 continue;
