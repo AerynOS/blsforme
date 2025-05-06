@@ -7,7 +7,7 @@
 use std::{
     fs::{self, create_dir_all, File},
     io,
-    os::{fd::AsRawFd, unix::fs::MetadataExt},
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
@@ -116,21 +116,19 @@ pub fn copy_atomic_vfat(
         .open(&dest_temp)?;
     let mut input = File::open(source)?;
 
-    let output_fd = output.as_raw_fd();
-
     // Copy *contents* only
     io::copy(&mut input, &mut output)?;
-    nix::unistd::syncfs(output_fd)?;
+    nix::unistd::syncfs(&output)?;
 
     // Remove original destination file
     if dest_exists {
         fs::remove_file(dest)?;
-        nix::unistd::syncfs(output_fd)?;
+        nix::unistd::syncfs(&output)?;
     }
 
     // Rename into final location
     fs::rename(dest_temp, dest)?;
-    nix::unistd::syncfs(output_fd)?;
+    nix::unistd::syncfs(&output)?;
 
     log::info!("Updated VFAT file: {}", dest.display());
 
