@@ -67,10 +67,8 @@ impl BootEnvironment {
             Self::determine_esp_by_gpt(disk_parent, config).ok()
         } else if let Ok(device) = Self::determine_esp_by_bls(&firmware, config) {
             Some(device)
-        } else if let Ok(device) = Self::determine_esp_by_gpt(disk_parent, config) {
-            Some(device)
         } else {
-            None
+            Self::determine_esp_by_gpt(disk_parent, config).ok()
         };
 
         // Make sure our config is sane!
