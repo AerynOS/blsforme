@@ -62,14 +62,15 @@ impl BootEnvironment {
             .filter_map(|m| Some((fs::canonicalize(m.device).ok()?, m)))
             .collect::<HashMap<_, _>>();
 
-        // For image mode, only allow raw discovery of the GPT device. Otherwise, query BLS
-        let esp = if matches!(config.root, Root::Image(_)) {
-            Self::determine_esp_by_gpt(disk_parent, config).ok()
-        } else if let Ok(device) = Self::determine_esp_by_bls(&firmware, config) {
-            Some(device)
-        } else {
-            Self::determine_esp_by_gpt(disk_parent, config).ok()
+        let esp_from_bls = match config.root {
+            // For image mode, don't query BLS.
+            Root::Image(_) => None,
+            // Otherwise, query BLS first.
+            _ => Self::determine_esp_by_bls(&firmware, config).ok(),
         };
+
+        // If in image mode or if the BLS query failed, use raw discovery of the GPT device.
+        let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(disk_parent, config).ok());
 
         // Make sure our config is sane!
         if let Firmware::UEFI = firmware {
