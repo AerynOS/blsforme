@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 blsforme = { path = "../blsforme" }
-clap = { version = "4.5.31", features = ["derive"] }
-color-eyre = { version = "0.6.3", features = ["issue-url"] }
+clap = { version = "4.5.39", features = ["derive"] }
+color-eyre = { version = "0.6.5", features = ["issue-url"] }
 glob = "0.3"
 log.workspace = true
 os-info.workspace = true
