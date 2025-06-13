@@ -11,11 +11,12 @@ use std::{
 
 use fs_err as fs;
 use gpt::{partition_types, GptConfig};
+use snafu::ResultExt as _;
 use topology::disk::probe::Probe;
 
 use crate::{
     bootloader::systemd_boot::interface::{BootLoaderInterface, VariableName},
-    Configuration, Error, Root,
+    Configuration, Error, GptSnafu, IoSnafu, Root,
 };
 
 /// Type of firmware detected
@@ -127,7 +128,7 @@ impl BootEnvironment {
     /// Determine ESP by searching relative GPT
     fn determine_esp_by_gpt(disk_parent: &Path, config: &Configuration) -> Result<PathBuf, Error> {
         log::trace!("Finding ESP on device: {disk_parent:?}");
-        let table = GptConfig::new().writable(false).open(disk_parent)?;
+        let table = GptConfig::new().writable(false).open(disk_parent).context(GptSnafu)?;
         let (_, esp) = table
             .partitions()
             .iter()
@@ -139,14 +140,14 @@ impl BootEnvironment {
             .join("disk")
             .join("by-partuuid")
             .join(esp.part_guid.as_hyphenated().to_string());
-        Ok(fs::canonicalize(path)?)
+        fs::canonicalize(path).context(IoSnafu)
     }
 
     /// Discover an XBOOTLDR partition *relative* to wherever the ESP is
     fn discover_xbootldr(probe: &Probe, esp: &PathBuf, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = probe.get_device_parent(esp).ok_or(Error::Unsupported)?;
         log::trace!("Finding XBOOTLDR on device: {parent:?}");
-        let table = GptConfig::new().writable(false).open(parent)?;
+        let table = GptConfig::new().writable(false).open(parent).context(GptSnafu)?;
         let (_, esp) = table
             .partitions()
             .iter()
@@ -158,7 +159,7 @@ impl BootEnvironment {
             .join("disk")
             .join("by-partuuid")
             .join(esp.part_guid.as_hyphenated().to_string());
-        Ok(fs::canonicalize(path)?)
+        fs::canonicalize(path).context(IoSnafu)
     }
 
     /// The so-called `$BOOT` partition (UEFI only at present)

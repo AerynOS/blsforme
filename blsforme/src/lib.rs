@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use bootloader::systemd_boot;
 use gpt::GptError;
-use thiserror::Error;
+use snafu::Snafu;
 
 mod kernel;
 pub use kernel::{AuxiliaryFile, AuxiliaryKind, BootJSON, Kernel, Schema};
@@ -29,39 +29,39 @@ mod entry;
 pub use entry::{CmdlineEntry, Entry};
 
 /// Core error type for blsforme
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
 pub enum Error {
-    #[error("boot loader protocol: {0}")]
-    BootLoaderProtocol(#[from] systemd_boot::interface::Error),
+    #[snafu(context(false), display("boot loader protocol: {source}"))]
+    BootLoaderProtocol { source: systemd_boot::interface::Error },
 
-    #[error("bootloader error")]
-    Bootloader(#[from] bootloader::Error),
+    #[snafu(context(false), display("bootloader error"))]
+    Bootloader { source: bootloader::Error },
 
-    #[error("c stdlib: {0}")]
-    C(#[from] nix::errno::Errno),
+    #[snafu(display("c stdlib: {source}"))]
+    Nix { source: nix::errno::Errno },
 
-    #[error("undetected xbootldr")]
+    #[snafu(display("undetected xbootldr"))]
     NoXbootldr,
 
-    #[error("undetected ESP")]
+    #[snafu(display("undetected ESP"))]
     NoEsp,
 
-    #[error("failed to interact with filesystem properly")]
+    #[snafu(display("failed to interact with filesystem properly"))]
     InvalidFilesystem,
 
-    #[error("generic i/o error")]
-    Io(#[from] std::io::Error),
+    #[snafu(display("generic i/o error"))]
+    Io { source: std::io::Error },
 
-    #[error("GPT error")]
-    Gpt(#[from] GptError),
+    #[snafu(display("GPT error"))]
+    Gpt { source: GptError },
 
-    #[error("topology scan: {0}")]
-    Topology(#[from] topology::disk::Error),
+    #[snafu(context(false), display("topology scan: {source}"))]
+    Topology { source: topology::disk::Error },
 
-    #[error("no ESP mounted in image mode, but detected an ESP at {0}")]
-    UnmountedEsp(PathBuf),
+    #[snafu(display("no ESP mounted in image mode, but detected an ESP at {path:?}"))]
+    UnmountedEsp { path: PathBuf },
 
-    #[error("unsupported usage")]
+    #[snafu(display("unsupported usage"))]
     Unsupported,
 }
 

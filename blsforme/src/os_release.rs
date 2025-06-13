@@ -13,12 +13,12 @@
 
 use std::{collections::HashMap, str::FromStr};
 
-use thiserror::Error;
+use snafu::Snafu;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
 pub enum Error {
-    #[error("Missing key: {0}")]
-    MissingKey(&'static str),
+    #[snafu(display("Missing key: {key}"))]
+    MissingKey { key: &'static str },
 }
 
 /// Private helper to decode types from a map
@@ -75,8 +75,8 @@ impl FromStr for OsRelease {
 impl MapDecode for OsRelease {
     fn map_decode(o: &HashMap<&str, &str>) -> Result<Self, Error> {
         Ok(Self {
-            name: o.get("NAME").ok_or(Error::MissingKey("NAME"))?.to_string(),
-            id: o.get("ID").ok_or(Error::MissingKey("ID"))?.to_string(),
+            name: o.get("NAME").ok_or(Error::MissingKey { key: "NAME" })?.to_string(),
+            id: o.get("ID").ok_or(Error::MissingKey { key: "ID" })?.to_string(),
             meta: Metadata::map_decode(o)?,
             version: Version::map_decode(o)?,
             urls: Urls::map_decode(o)?,

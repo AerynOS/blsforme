@@ -5,8 +5,9 @@
 use std::path::PathBuf;
 
 use fs_err as fs;
+use snafu::ResultExt as _;
 
-use crate::{file_utils::cmdline_snippet, AuxiliaryFile, Configuration, Kernel, Schema};
+use crate::{file_utils::cmdline_snippet, AuxiliaryFile, Configuration, IoSnafu, Kernel, Schema};
 
 /// A cmdline entry is found in the `$sysroot/usr/lib/kernel/cmdline.d` directory
 #[derive(Debug)]
@@ -73,7 +74,7 @@ impl<'a> Entry<'a> {
             return Ok(());
         }
 
-        let entries = fs::read_dir(&cmdline_d)?;
+        let entries = fs::read_dir(&cmdline_d).context(IoSnafu)?;
 
         for entry in entries.filter_map(Result::ok) {
             let name = entry.file_name().to_string_lossy().to_string();

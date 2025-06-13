@@ -10,8 +10,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::Error;
+use crate::{Error, IoSnafu};
 use fs_err::{self as fs, File};
+use snafu::ResultExt as _;
 
 /// Case-insensitive path joining for FAT, respecting existing entries on the filesystem
 /// Note, this discards errors, so will require read permissions
@@ -38,7 +39,7 @@ impl<P: AsRef<Path>> PathExt<P> for PathBuf {
 }
 
 /// Compare two files with blake3 to see if they differ
-fn files_identical(hasher: &mut blake3::Hasher, a: &Path, b: &Path) -> Result<bool, Error> {
+fn files_identical(hasher: &mut blake3::Hasher, a: &Path, b: &Path) -> io::Result<bool> {
     let fi_a = File::open(a)?;
     let fi_b = File::open(b)?;
     let fi_a_m = fi_a.metadata()?;
@@ -134,7 +135,8 @@ pub fn copy_atomic_vfat(source: impl AsRef<Path>, dest: impl AsRef<Path>) -> io:
 pub fn cmdline_snippet(path: impl AsRef<Path>) -> Result<String, Error> {
     let path = path.as_ref();
     log::trace!("Reading cmdline snippet: {path:?}");
-    let ret = fs::read_to_string(path)?
+    let ret = fs::read_to_string(path)
+        .context(IoSnafu)?
         .lines()
         .map(|l| l.trim())
         .filter(|l| !l.starts_with('#'))
