@@ -4,7 +4,11 @@
 
 //! Boot environment tracking (ESP vs XBOOTLDR, etc)
 
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use gpt::{partition_types, GptConfig};
 use topology::disk::probe::Probe;
@@ -66,7 +70,7 @@ impl BootEnvironment {
         };
 
         // If in image mode or if the BLS query failed, use raw discovery of the GPT device.
-        let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(disk_parent, config).ok());
+        let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(&disk_parent?, config).ok());
 
         // Make sure our config is sane!
         if let Firmware::Uefi = firmware {
@@ -126,10 +130,9 @@ impl BootEnvironment {
     }
 
     /// Determine ESP by searching relative GPT
-    fn determine_esp_by_gpt(disk_parent: Option<PathBuf>, config: &Configuration) -> Result<PathBuf, Error> {
-        let parent = disk_parent.ok_or(Error::Unsupported)?;
-        log::trace!("Finding ESP on device: {parent:?}");
-        let table = GptConfig::new().writable(false).open(parent)?;
+    fn determine_esp_by_gpt(disk_parent: &Path, config: &Configuration) -> Result<PathBuf, Error> {
+        log::trace!("Finding ESP on device: {disk_parent:?}");
+        let table = GptConfig::new().writable(false).open(disk_parent)?;
         let (_, esp) = table
             .partitions()
             .iter()
