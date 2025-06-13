@@ -130,11 +130,9 @@ impl Probe {
         let device = self.get_device_from_mountpoint(path)?;
 
         // Scan GPT for PartUUID
-        let guid = if let Some(parent) = self.get_device_parent(&device) {
-            self.get_device_guid(parent, &device)
-        } else {
-            None
-        };
+        let guid = self
+            .get_device_parent(&device)
+            .and_then(|parent| self.get_device_guid(parent, &device));
 
         let chain = self.get_device_chain(&device)?;
         let mut custodials = vec![device.clone()];

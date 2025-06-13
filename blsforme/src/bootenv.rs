@@ -22,7 +22,7 @@ use crate::{
 ///
 /// By knowing the available firmware (effectively: is `efivarfs` mounted)
 /// we can detect full availability of UEFI features or legacy fallback.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Firmware {
     /// UEFI
     Uefi,
@@ -73,11 +73,9 @@ impl BootEnvironment {
         let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(&disk_parent?, config).ok());
 
         // Make sure our config is sane!
-        if let Firmware::Uefi = firmware {
-            if esp.is_none() {
-                log::error!("No usable ESP detected for a UEFI system");
-                return Err(Error::NoEsp);
-            }
+        if firmware == Firmware::Uefi && esp.is_none() {
+            log::error!("No usable ESP detected for a UEFI system");
+            return Err(Error::NoEsp);
         }
 
         let Some(esp_path) = &esp else {
@@ -94,12 +92,11 @@ impl BootEnvironment {
 
         // Report ESP and check for XBOOTLDR
         log::info!("EFI System Partition: {}", esp_path.display());
-        let xbootldr = if let Ok(xbootldr) = Self::discover_xbootldr(probe, esp_path, config) {
-            log::info!("EFI XBOOTLDR Partition: {}", xbootldr.display());
-            Some(xbootldr)
-        } else {
-            None
-        };
+
+        let xbootldr = Self::discover_xbootldr(probe, esp_path, config).ok();
+        if let Some(path) = &xbootldr {
+            log::info!("EFI XBOOTLDR Partition: {}", path.display());
+        }
 
         let xboot_mountpoint = xbootldr
             .as_ref()

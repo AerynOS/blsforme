@@ -161,13 +161,9 @@ impl Schema {
     ) -> Result<Vec<Kernel>, Error> {
         let paths = paths.collect::<Vec<_>>();
         // First up, find kernels. They start with the prefix..
-        let candidates = paths.iter().filter_map(|p| {
-            if p.as_ref().file_name()?.to_str()?.starts_with(namespace) {
-                Some(p)
-            } else {
-                None
-            }
-        });
+        let candidates = paths
+            .iter()
+            .filter_map(|p| p.as_ref().file_name()?.to_str()?.starts_with(namespace).then_some(p));
 
         let mut kernels = BTreeMap::new();
 
@@ -236,15 +232,11 @@ impl Schema {
                     }),
                     x if x.starts_with(&initrd_file) => {
                         // Version dependent initrd
-                        if x != initrd_file {
-                            if x.split_once(&initrd_file).is_some() {
-                                Some(AuxiliaryFile {
-                                    path: path.as_ref().into(),
-                                    kind: AuxiliaryKind::InitRd,
-                                })
-                            } else {
-                                None
-                            }
+                        if x != initrd_file && x.split_once(&initrd_file).is_some() {
+                            Some(AuxiliaryFile {
+                                path: path.as_ref().into(),
+                                kind: AuxiliaryKind::InitRd,
+                            })
                         } else {
                             None
                         }

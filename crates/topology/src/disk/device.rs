@@ -87,12 +87,9 @@ impl<'a> BlockDevice<'a> {
         let mount = self.mountpoint.as_ref().and_then(|m| mounts.get(m));
         let mount_options = if let Some(mp) = mount {
             mp.options()
-                .filter_map(|o| {
-                    if let MountOption::Option(k, v) = o {
-                        Some((k, v))
-                    } else {
-                        None
-                    }
+                .filter_map(|o| match o {
+                    MountOption::Option(k, v) => Some((k, v)),
+                    _ => None,
                 })
                 .collect::<HashMap<_, _>>()
         } else {

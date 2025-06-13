@@ -91,20 +91,14 @@ impl<'a> Manager<'a> {
         log::trace!("boot env: {boot_env:?}");
 
         let mut mounts = Mounts {
-            xbootldr: if let Some(point) = boot_env.xboot_mountpoint.as_ref() {
-                Some(point.clone())
-            } else if boot_env.xbootldr().is_some() {
+            xbootldr: boot_env.xboot_mountpoint.clone().or_else(|| {
+                _ = boot_env.xbootldr()?;
                 Some(config.root.path().join("boot"))
-            } else {
-                None
-            },
-            esp: if let Some(point) = boot_env.esp_mountpoint.as_ref() {
-                Some(point.clone())
-            } else if boot_env.esp().is_some() {
+            }),
+            esp: boot_env.esp_mountpoint.clone().or_else(|| {
+                _ = boot_env.esp()?;
                 Some(config.root.path().join("efi"))
-            } else {
-                None
-            },
+            }),
         };
 
         log::trace!("selected mountpoints: {mounts:?}");
