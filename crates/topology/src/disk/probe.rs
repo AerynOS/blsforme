@@ -161,9 +161,7 @@ impl Probe {
         let sysfs_path = fs::canonicalize(
             device
                 .file_name()
-                .map(|f| self.sysfs.join("class").join("block").join(f))
-                .ok_or_else(|| super::Error::InvalidDevice(device.clone()))
-                .ok()?,
+                .map(|f| self.sysfs.join("class").join("block").join(f))?,
         )
         .ok()?;
         let partition = str::parse::<u32>(fs::read_to_string(sysfs_path.join("partition")).ok()?.trim()).ok()?;
