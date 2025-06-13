@@ -92,7 +92,7 @@ fn scan_os_release(root: impl AsRef<Path>) -> color_eyre::Result<OsRelease> {
 }
 
 /// Scan the rootfs for os-info.json
-fn scan_os_info(root: impl AsRef<Path>) -> color_eyre::Result<os_info::OSInfo> {
+fn scan_os_info(root: impl AsRef<Path>) -> color_eyre::Result<os_info::OsInfo> {
     let root = root.as_ref();
     let query_paths = vec![
         root.join("run").join("os-info.json"),
