@@ -899,6 +899,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
+name = "snafu"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320b01e011bf8d5d7a4a4a4be966d9160968935849c83b918827f6a435e7f627"
+dependencies = [
+ "snafu-derive",
+]
+
+[[package]]
+name = "snafu-derive"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1961e2ef424c1424204d3a5d6975f934f56b6d50ff5732382d84ebf460e147f7"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -913,11 +934,11 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "superblock"
 version = "0.1.0"
-source = "git+https://github.com/AerynOS/disks-rs?rev=eaf696353270f2cb76966f8a858f22c5289c9558#eaf696353270f2cb76966f8a858f22c5289c9558"
+source = "git+https://github.com/AerynOS/disks-rs?rev=437299f58e19ec8dc3a6699a918ee3dbece72bd3#437299f58e19ec8dc3a6699a918ee3dbece72bd3"
 dependencies = [
  "serde",
  "serde_json",
- "thiserror",
+ "snafu",
  "uuid",
  "zerocopy",
 ]

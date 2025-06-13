@@ -106,7 +106,7 @@ impl<'a> BlockDevice<'a> {
                         format!("root=UUID={uuid}")
                     }
                 }
-                superblock::Kind::LUKS2 => {
+                superblock::Kind::Luks2 => {
                     let uuid = self.uuid.as_ref().expect("cannot have luks2 without uuid");
                     format!("rd.luks.uuid={uuid}")
                 }

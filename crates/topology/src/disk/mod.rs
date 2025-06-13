@@ -28,6 +28,9 @@ pub enum Error {
     #[error("no such device: {0}")]
     InvalidDevice(PathBuf),
 
-    #[error("superblock: {0}")]
+    #[error("failed to read superblock: {0}")]
     Superblock(#[from] superblock::Error),
+
+    #[error("superblock contains invalid unicode: {0}")]
+    SuperblockUnicode(#[from] superblock::UnicodeError),
 }
