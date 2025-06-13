@@ -12,7 +12,7 @@ use std::{
 use serde::Deserialize;
 
 use crate::{os_release::OsRelease, Error};
-use os_info::OSInfo;
+use os_info::OsInfo;
 
 /// Control kernel discovery mechanism
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub enum Schema {
     Blsforme { os_release: Box<OsRelease> },
 
     /// Modern distribution using os-info.json
-    OsInfo { os_info: Box<OSInfo> },
+    OsInfo { os_info: Box<OsInfo> },
 }
 
 /// `boot.json` deserialise support
