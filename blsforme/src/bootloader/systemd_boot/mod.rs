@@ -7,8 +7,10 @@
 use std::path::PathBuf;
 
 use fs_err as fs;
+use snafu::{OptionExt as _, ResultExt as _};
 
 use crate::{
+    bootloader::{IoSnafu, MissingFileSnafu, MissingMountSnafu, PrefixSnafu},
     file_utils::{changed_files, copy_atomic_vfat, PathExt},
     manager::Mounts,
     Entry, Kernel, Schema,
@@ -41,13 +43,13 @@ struct InstallResult {
 impl<'a, 'b> Loader<'a, 'b> {
     /// Construct a new systemd boot loader manager
     pub(super) fn new(schema: &'a Schema, assets: &'b [PathBuf], mounts: &'a Mounts) -> Result<Self, super::Error> {
-        let boot_root = if let Some(xbootldr) = mounts.xbootldr.as_ref() {
-            xbootldr.clone()
-        } else if let Some(esp) = mounts.esp.as_ref() {
-            esp.clone()
-        } else {
-            return Err(super::Error::MissingMount("ESP (/efi)"));
-        };
+        let boot_root = mounts
+            .xbootldr
+            .clone()
+            .or_else(|| mounts.esp.clone())
+            .context(MissingMountSnafu {
+                description: "ESP (/efi)",
+            })?;
 
         Ok(Self {
             schema,
@@ -71,14 +73,14 @@ impl<'a, 'b> Loader<'a, 'b> {
             .assets
             .iter()
             .find(|p| p.ends_with("systemd-bootx64.efi"))
-            .ok_or(super::Error::MissingFile("systemd-bootx64.efi"))?;
+            .context(MissingFileSnafu {
+                filename: "systemd-bootx64.efi",
+            })?;
         log::debug!("discovered main efi asset: {}", x64_efi.display());
 
-        let esp = self
-            .mounts
-            .esp
-            .as_ref()
-            .ok_or(super::Error::MissingMount("ESP (/efi)"))?;
+        let esp = self.mounts.esp.as_ref().context(MissingMountSnafu {
+            description: "ESP (/efi)",
+        })?;
         // Copy systemd-bootx64.efi into these locations
         let targets = vec![
             (
@@ -96,20 +98,20 @@ impl<'a, 'b> Loader<'a, 'b> {
         ];
 
         for (source, dest) in changed_files(targets.as_slice()) {
-            copy_atomic_vfat(source, dest)?;
+            copy_atomic_vfat(source, dest).context(IoSnafu)?;
         }
 
         // Write the loader.conf file with default entry pattern based on namespace
         let loader_conf_dir = self.boot_root.join_insensitive("loader");
         let loader_conf_path = loader_conf_dir.join_insensitive("loader.conf");
         if !loader_conf_dir.exists() {
-            fs::create_dir_all(loader_conf_dir)?;
+            fs::create_dir_all(loader_conf_dir).context(IoSnafu)?;
         }
 
         // Create a default pattern that matches all entries for our namespace
         let namespace = self.schema.os_namespace();
         let default_pattern = format!("default \"{namespace}*\"\n");
-        fs::write(loader_conf_path, default_pattern)?;
+        fs::write(loader_conf_path, default_pattern).context(IoSnafu)?;
 
         Ok(())
     }
@@ -255,7 +257,7 @@ impl<'a, 'b> Loader<'a, 'b> {
         let vmlinuz = kernel_dir.join_insensitive(
             entry
                 .installed_kernel_name(effective_schema)
-                .ok_or_else(|| super::Error::MissingFile("vmlinuz"))?,
+                .context(MissingFileSnafu { filename: "vmlinuz" })?,
         );
         // initrds requiring install
         let initrds = entry
@@ -282,30 +284,35 @@ impl<'a, 'b> Loader<'a, 'b> {
 
         // Donate them to disk
         for (source, dest) in needs_writing {
-            copy_atomic_vfat(source, dest)?;
+            copy_atomic_vfat(source, dest).context(IoSnafu)?;
         }
 
-        let asset_dir = kernel_dir.strip_prefix(&self.boot_root)?.to_string_lossy();
+        let asset_dir = kernel_dir
+            .strip_prefix(&self.boot_root)
+            .context(PrefixSnafu)?
+            .to_string_lossy();
 
         let loader_config = self.generate_entry(&asset_dir, cmdline, entry);
         log::trace!("loader config: {loader_config}");
 
         let entry_dir = self.boot_root.join_insensitive("loader").join_insensitive("entries");
         if !entry_dir.exists() {
-            fs::create_dir_all(entry_dir)?;
+            fs::create_dir_all(entry_dir).context(IoSnafu)?;
         }
 
         let tracker = InstallResult {
             loader_conf: loader_id.to_string_lossy().to_string(),
             kernel_dir: vmlinuz
                 .parent()
-                .ok_or_else(|| super::Error::MissingFile("vmlinuz parent"))?
+                .context(MissingFileSnafu {
+                    filename: "vmlinuz parent",
+                })?
                 .to_string_lossy()
                 .to_string(),
         };
 
         // TODO: Hash compare and dont obliterate!
-        fs::write(loader_id, loader_config)?;
+        fs::write(loader_id, loader_config).context(IoSnafu)?;
 
         Ok(tracker)
     }
@@ -351,12 +358,13 @@ options {cmdline}
             .join_insensitive("EFI")
             .join_insensitive(self.schema.os_namespace());
 
-        for entry in fs::read_dir(&base_kernel_dir)? {
-            let entry = entry?;
-            if !entry.file_type()?.is_dir() {
+        for entry in fs::read_dir(&base_kernel_dir).context(IoSnafu)? {
+            let entry = entry.context(IoSnafu)?;
+            if !entry.file_type().context(IoSnafu)?.is_dir() {
                 continue;
             }
-            let paths = fs::read_dir(entry.path())?
+            let paths = fs::read_dir(entry.path())
+                .context(IoSnafu)?
                 .filter_map(|p| p.ok())
                 .map(|d| d.path())
                 .collect::<Vec<_>>();

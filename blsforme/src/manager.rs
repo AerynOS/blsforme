@@ -8,11 +8,12 @@ use std::path::{Path, PathBuf};
 
 use fs_err as fs;
 use nix::mount::{mount, umount, MsFlags};
+use snafu::{ensure, ResultExt as _};
 use topology::disk;
 
 use crate::{
-    bootloader::Bootloader, file_utils::cmdline_snippet, BootEnvironment, Configuration, Entry, Error, Kernel, Root,
-    Schema,
+    bootloader::Bootloader, file_utils::cmdline_snippet, BootEnvironment, Configuration, Entry, Error, IoSnafu, Kernel,
+    NixSnafu, Root, Schema, UnmountedEspSnafu,
 };
 
 #[derive(Debug)]
@@ -189,9 +190,9 @@ impl<'a> Manager<'a> {
     fn mount_vfat_partition(&self, source: &Path, target: &Path) -> Result<ScopedMount, Error> {
         let options: Option<&str> = None;
         if !target.exists() {
-            fs::create_dir_all(target)?;
+            fs::create_dir_all(target).context(IoSnafu)?;
         }
-        mount(Some(source), target, Some("vfat"), MsFlags::MS_MGC_VAL, options)?;
+        mount(Some(source), target, Some("vfat"), MsFlags::MS_MGC_VAL, options).context(NixSnafu)?;
         log::info!("Mounted vfat partition {} at {}", source.display(), target.display());
         Ok(ScopedMount {
             point: target.into(),
@@ -206,9 +207,7 @@ impl<'a> Manager<'a> {
     pub fn sync(&self, schema: &Schema) -> Result<(), Error> {
         if let Root::Image(_) = self.config.root {
             if let Some(esp) = self.boot_env.esp() {
-                if self.boot_env.esp_mountpoint.is_none() {
-                    return Err(Error::UnmountedEsp(esp.clone()));
-                }
+                ensure!(self.boot_env.esp_mountpoint.is_some(), UnmountedEspSnafu { path: esp });
             }
         }
         // Firstly, get the bootloader updated.

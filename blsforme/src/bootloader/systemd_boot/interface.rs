@@ -16,7 +16,7 @@ use std::{
 };
 
 use fs_err as fs;
-use thiserror::Error;
+use snafu::{ResultExt as _, Snafu};
 
 /// Simple encapsulation of a Boot Loader Interface over efivars
 pub struct BootLoaderInterface {
@@ -33,16 +33,16 @@ pub struct BootLoaderInterface {
 /// The well known vendor UUID for the Boot Loader Interface
 pub const UUID: &str = "4a67b082-0a4c-41cf-b6c7-440b29bb8c4f";
 
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
 pub enum Error {
-    #[error("failed to decode UTF16 string: {0}")]
-    Utf16Decoding(#[from] FromUtf16Error),
+    #[snafu(display("failed to decode UTF16 string: {source}"))]
+    Utf16Decoding { source: FromUtf16Error },
 
-    #[error("i/o error: {0}")]
-    Io(#[from] io::Error),
+    #[snafu(display("I/O error: {source}"))]
+    Io { source: io::Error },
 
-    #[error("invalid prefix: {0}")]
-    InvalidPrefix(#[from] path::StripPrefixError),
+    #[snafu(display("invalid prefix: {source}"))]
+    InvalidPrefix { source: path::StripPrefixError },
 }
 
 /// Variables that are currently exposed via efivars
@@ -90,7 +90,7 @@ impl Display for VariableName {
 impl BootLoaderInterface {
     /// Generate a new BootLoaderInterface for the given root
     pub fn new(root: impl AsRef<Path>) -> Result<Self, Error> {
-        let root: PathBuf = fs::canonicalize(root)?;
+        let root: PathBuf = fs::canonicalize(root).context(IoSnafu)?;
         let efi_dir = root.join("sys").join("firmware").join("efi").join("efivars");
         let disk_dir = root.join("dev").join("disk").join("by-partuuid");
 
@@ -108,19 +108,20 @@ impl BootLoaderInterface {
 
     /// Determine which device "booted", ie the ESP on which systemd-boot lives
     pub fn get_device_path(&self) -> Result<PathBuf, Error> {
-        let canonical = fs::canonicalize(self.disk_dir.join(self.get_device_part_uuid()?))?;
-        Ok(PathBuf::from("/").join(canonical.strip_prefix(&self.root)?))
+        let canonical = fs::canonicalize(self.disk_dir.join(self.get_device_part_uuid()?)).context(IoSnafu)?;
+        Ok(PathBuf::from("/").join(canonical.strip_prefix(&self.root).context(InvalidPrefixSnafu)?))
     }
 
     /// Grab a UCS2 string from efivars
     pub fn get_ucs2_string(&self, var: VariableName) -> Result<String, Error> {
-        let mut raw = fs::read(self.join_var(var))?
+        let mut raw = fs::read(self.join_var(var))
+            .context(IoSnafu)?
             .chunks(2)
             .skip(2)
             .map(|c| u16::from_le_bytes([c[0], c[1]]))
             .collect::<Vec<_>>();
         raw.pop();
-        Ok(String::from_utf16(&raw)?)
+        String::from_utf16(&raw).context(Utf16DecodingSnafu)
     }
 
     /// Generate root path for the variable

@@ -6,26 +6,26 @@
 
 use std::path::{PathBuf, StripPrefixError};
 
-use thiserror::Error;
+use snafu::Snafu;
 
 use crate::{manager::Mounts, Entry, Firmware, Kernel, Schema};
 
 pub mod systemd_boot;
 
 /// Bootloader errors
-#[derive(Error, Debug)]
+#[derive(Debug, Snafu)]
 pub enum Error {
-    #[error("missing bootloader file: {0}")]
-    MissingFile(&'static str),
+    #[snafu(display("missing bootloader file: {filename}"))]
+    MissingFile { filename: &'static str },
 
-    #[error("missing mountpoint: {0}")]
-    MissingMount(&'static str),
+    #[snafu(display("missing mountpoint: {description}"))]
+    MissingMount { description: &'static str },
 
-    #[error("io: {0}")]
-    Io(#[from] std::io::Error),
+    #[snafu(display("io: {source}"))]
+    Io { source: std::io::Error },
 
-    #[error("wip: {0}")]
-    Prefix(#[from] StripPrefixError),
+    #[snafu(display("wip: {source}"))]
+    Prefix { source: StripPrefixError },
 }
 
 #[derive(Debug)]
