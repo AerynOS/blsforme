@@ -11,3 +11,4 @@ superblock.workspace = true
 nix.workspace = true
 log.workspace = true
 gpt.workspace = true
+fs-err.workspace = true

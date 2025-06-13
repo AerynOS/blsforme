@@ -6,10 +6,10 @@
 
 use std::{
     collections::HashMap,
-    fs,
     path::{Path, PathBuf},
 };
 
+use fs_err as fs;
 use gpt::{partition_types, GptConfig};
 use topology::disk::probe::Probe;
 

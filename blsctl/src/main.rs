@@ -6,7 +6,6 @@
 //! replacement for Solus.
 
 use std::{
-    fs::{self},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -14,6 +13,7 @@ use std::{
 use blsforme::{os_release::OsRelease, BootJSON, Configuration, Entry, Manager, Root, Schema};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Section};
+use fs_err as fs;
 
 use pretty_env_logger::formatted_builder;
 

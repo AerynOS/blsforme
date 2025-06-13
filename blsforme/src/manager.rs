@@ -4,11 +4,9 @@
 
 //! Boot loader management entry APIs
 
-use std::{
-    fs::{self, create_dir_all},
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
+use fs_err as fs;
 use nix::mount::{mount, umount, MsFlags};
 use topology::disk;
 
@@ -191,7 +189,7 @@ impl<'a> Manager<'a> {
     fn mount_vfat_partition(&self, source: &Path, target: &Path) -> Result<ScopedMount, Error> {
         let options: Option<&str> = None;
         if !target.exists() {
-            create_dir_all(target)?;
+            fs::create_dir_all(target)?;
         }
         mount(Some(source), target, Some("vfat"), MsFlags::MS_MGC_VAL, options)?;
         log::info!("Mounted vfat partition {} at {}", source.display(), target.display());

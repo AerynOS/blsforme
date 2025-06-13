@@ -4,7 +4,9 @@
 
 //! Processing of `/proc/self/mounts` & `/etc/mtab`
 
-use std::{fs, io, path::Path};
+use std::{io, path::Path};
+
+use fs_err as fs;
 
 /// Encapsulates a `/proc/self/mounts` or mtab file, ignoring fstab specific 5&6 columns
 #[derive(Debug)]
