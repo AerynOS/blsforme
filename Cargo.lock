@@ -157,8 +157,6 @@ dependencies = [
  "nix",
  "os-info",
  "pretty_env_logger",
- "thiserror",
- "topology",
 ]
 
 [[package]]
@@ -172,7 +170,6 @@ dependencies = [
  "os-info",
  "serde",
  "serde_json",
- "superblock",
  "thiserror",
  "topology",
 ]
