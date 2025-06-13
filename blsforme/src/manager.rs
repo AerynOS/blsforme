@@ -158,14 +158,14 @@ impl<'a> Manager<'a> {
         // Got the ESP, not mounted.
         if let Some(hw) = self.boot_env.esp() {
             if self.boot_env.esp_mountpoint.is_none() {
-                let mount_point = self.mounts.esp.clone().ok_or_else(|| Error::NoEsp)?;
+                let mount_point = self.mounts.esp.clone().ok_or(Error::NoEsp)?;
                 mounted_paths.insert(0, self.mount_vfat_partition(hw, &mount_point)?);
             }
         }
         // Got an XBOOTLDR, not mounted..
         if let Some(hw) = self.boot_env.xbootldr() {
             if self.boot_env.xboot_mountpoint.is_none() {
-                let mount_point = self.mounts.xbootldr.clone().ok_or_else(|| Error::NoXbootldr)?;
+                let mount_point = self.mounts.xbootldr.clone().ok_or(Error::NoXbootldr)?;
                 mounted_paths.insert(0, self.mount_vfat_partition(hw, &mount_point)?);
             }
         }
