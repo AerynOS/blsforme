@@ -8,9 +8,10 @@ use std::path::{Path, PathBuf};
 
 use fs_err as fs;
 use nix::sys::stat;
+use snafu::{OptionExt, ResultExt as _};
 use superblock::Superblock;
 
-use super::{device::BlockDevice, mounts::Table};
+use super::{device::BlockDevice, mounts::Table, CanonicalizeSnafu, InvalidDeviceSnafu, IoSnafu, NixSnafu};
 
 /// A Disk probe to query disks
 #[derive(Debug)]
@@ -32,7 +33,7 @@ impl Probe {
     /// Initial startup loads
     /// TODO: If requested, pvscan/vgscan/lvscan
     pub(super) fn init_scan(&mut self) -> Result<(), super::Error> {
-        let mounts = Table::new_from_path(self.procfs.join("self").join("mounts"))?;
+        let mounts = Table::new_from_path(self.procfs.join("self").join("mounts")).context(IoSnafu)?;
         self.mounts = mounts;
 
         Ok(())
@@ -40,10 +41,10 @@ impl Probe {
 
     /// Resolve a device by mountpoint
     pub fn get_device_from_mountpoint(&self, mountpoint: impl AsRef<Path>) -> Result<PathBuf, super::Error> {
-        let mountpoint = fs::canonicalize(mountpoint.as_ref())?;
+        let mountpoint = fs::canonicalize(mountpoint.as_ref()).context(IoSnafu)?;
 
         // Attempt to stat the device
-        let stat = stat::lstat(&mountpoint)?;
+        let stat = stat::lstat(&mountpoint).context(NixSnafu)?;
         let device_path =
             self.devfs
                 .join("block")
@@ -51,14 +52,14 @@ impl Probe {
 
         // Return by stat path if possible, otherwise fallback to mountpoint device
         if device_path.exists() {
-            Ok(fs::canonicalize(&device_path)?)
+            Ok(fs::canonicalize(&device_path).context(CanonicalizeSnafu)?)
         } else {
             // Find matching mountpoint
             let matching_device = self
                 .mounts
                 .iter()
                 .find(|m| PathBuf::from(m.mountpoint) == mountpoint)
-                .ok_or(super::Error::UnknownMount(mountpoint))?;
+                .ok_or(super::Error::UnknownMount { path: mountpoint })?;
             // TODO: Handle `ZFS=`, and composite bcachefs mounts (dev:dev1:dev2)
             Ok(matching_device.device.into())
         }
@@ -84,13 +85,14 @@ impl Probe {
     /// When given a path in `/dev` we attempt to resolve the full chain for it.
     /// Note: This does NOT include the initially passed device.
     pub fn get_device_chain(&self, device: impl AsRef<Path>) -> Result<Vec<PathBuf>, super::Error> {
-        let device = fs::canonicalize(device.as_ref())?;
+        let device = fs::canonicalize(device.as_ref()).context(CanonicalizeSnafu)?;
         let sysfs_path = fs::canonicalize(
             device
                 .file_name()
                 .map(|f| self.sysfs.join("class").join("block").join(f))
-                .ok_or_else(|| super::Error::InvalidDevice(device.clone()))?,
-        )?;
+                .context(InvalidDeviceSnafu { path: device })?,
+        )
+        .context(CanonicalizeSnafu)?;
 
         let mut ret = vec![];
         // no backing devices
@@ -100,8 +102,8 @@ impl Probe {
         }
 
         // Build a recursive set of device backings
-        for dir in fs::read_dir(dir)? {
-            let entry = dir?;
+        for dir in fs::read_dir(dir).context(IoSnafu)? {
+            let entry = dir.context(IoSnafu)?;
             let name = self.devfs.join(entry.file_name());
             ret.push(name.clone());
             ret.extend(self.get_device_chain(&name)?);
@@ -114,7 +116,7 @@ impl Probe {
     pub fn get_device_superblock(&self, path: impl AsRef<Path>) -> Result<Superblock, super::Error> {
         let path = path.as_ref();
         log::trace!("Querying superblock information for {}", path.display());
-        let mut fi = fs::File::open(path)?;
+        let mut fi = fs::File::open(path).context(IoSnafu)?;
         let sb = Superblock::from_reader(&mut fi)?;
         log::trace!("detected superblock: {}", sb.kind());
 
