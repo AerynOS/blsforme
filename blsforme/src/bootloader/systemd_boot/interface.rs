@@ -41,9 +41,6 @@ pub enum Error {
     #[error("i/o error: {0}")]
     Io(#[from] io::Error),
 
-    #[error("malformed utf16 string")]
-    Malformed,
-
     #[error("invalid prefix: {0}")]
     InvalidPrefix(#[from] path::StripPrefixError),
 }
