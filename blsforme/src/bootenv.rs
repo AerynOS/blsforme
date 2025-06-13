@@ -4,11 +4,7 @@
 
 //! Boot environment tracking (ESP vs XBOOTLDR, etc)
 
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    path::PathBuf,
-};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use gpt::{partition_types, GptConfig};
 use topology::disk::probe::Probe;
@@ -133,8 +129,7 @@ impl BootEnvironment {
     fn determine_esp_by_gpt(disk_parent: Option<PathBuf>, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = disk_parent.ok_or(Error::Unsupported)?;
         log::trace!("Finding ESP on device: {parent:?}");
-        let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new().writable(false).open_from_device(device)?;
+        let table = GptConfig::new().writable(false).open(parent)?;
         let (_, esp) = table
             .partitions()
             .iter()
@@ -153,8 +148,7 @@ impl BootEnvironment {
     fn discover_xbootldr(probe: &Probe, esp: &PathBuf, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = probe.get_device_parent(esp).ok_or(Error::Unsupported)?;
         log::trace!("Finding XBOOTLDR on device: {parent:?}");
-        let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new().writable(false).open_from_device(device)?;
+        let table = GptConfig::new().writable(false).open(parent)?;
         let (_, esp) = table
             .partitions()
             .iter()
