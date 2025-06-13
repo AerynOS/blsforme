@@ -22,7 +22,7 @@ pub enum Error {
     MissingMount(&'static str),
 
     #[error("io: {0}")]
-    IO(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error("wip: {0}")]
     Prefix(#[from] StripPrefixError),
@@ -46,10 +46,10 @@ impl<'a, 'b> Bootloader<'a, 'b> {
         firmware: &Firmware,
     ) -> Result<Self, Error> {
         match firmware {
-            Firmware::UEFI => Ok(Bootloader::Systemd(Box::new(systemd_boot::Loader::new(
+            Firmware::Uefi => Ok(Bootloader::Systemd(Box::new(systemd_boot::Loader::new(
                 schema, assets, mounts,
             )?))),
-            Firmware::BIOS => unimplemented!(),
+            Firmware::Bios => unimplemented!(),
         }
     }
 

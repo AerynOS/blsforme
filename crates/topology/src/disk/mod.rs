@@ -17,7 +17,7 @@ pub mod probe;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("from io: {0}")]
-    IO(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error("c stdlib: {0}")]
     StdLib(#[from] nix::Error),

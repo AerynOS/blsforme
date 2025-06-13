@@ -25,10 +25,10 @@ use crate::{
 #[derive(Debug)]
 pub enum Firmware {
     /// UEFI
-    UEFI,
+    Uefi,
 
     /// Legacy BIOS. Tread carefully
-    BIOS,
+    Bios,
 }
 
 /// Helps access the boot environment, ie `$BOOT` and specific ESP
@@ -51,9 +51,9 @@ impl BootEnvironment {
     /// Return a new BootEnvironment for the given root
     pub fn new(probe: &Probe, disk_parent: Option<PathBuf>, config: &Configuration) -> Result<Self, Error> {
         let firmware = if config.vfs.join("sys").join("firmware").join("efi").exists() {
-            Firmware::UEFI
+            Firmware::Uefi
         } else {
-            Firmware::BIOS
+            Firmware::Bios
         };
 
         let mounts = probe
@@ -73,10 +73,10 @@ impl BootEnvironment {
         let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(disk_parent, config).ok());
 
         // Make sure our config is sane!
-        if let Firmware::UEFI = firmware {
+        if let Firmware::Uefi = firmware {
             if esp.is_none() {
                 log::error!("No usable ESP detected for a UEFI system");
-                return Err(Error::NoESP);
+                return Err(Error::NoEsp);
             }
         }
 
@@ -119,7 +119,7 @@ impl BootEnvironment {
     /// If UEFI we can ask BootLoaderProtocol for help to find out the ESP device.
     fn determine_esp_by_bls(firmware: &Firmware, config: &Configuration) -> Result<PathBuf, Error> {
         // UEFI only tyvm
-        if let Firmware::BIOS = *firmware {
+        if let Firmware::Bios = *firmware {
             return Err(Error::Unsupported);
         }
 
@@ -139,7 +139,7 @@ impl BootEnvironment {
             .partitions()
             .iter()
             .find(|(_, p)| p.part_type_guid == partition_types::EFI)
-            .ok_or(Error::NoESP)?;
+            .ok_or(Error::NoEsp)?;
         let path = config
             .vfs
             .join("dev")
@@ -159,7 +159,7 @@ impl BootEnvironment {
             .partitions()
             .iter()
             .find(|(_, p)| p.part_type_guid == partition_types::FREEDESK_BOOT)
-            .ok_or(Error::NoXBOOTLDR)?;
+            .ok_or(Error::NoXbootldr)?;
         let path = config
             .vfs
             .join("dev")

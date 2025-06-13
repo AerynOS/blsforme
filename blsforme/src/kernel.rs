@@ -83,7 +83,7 @@ pub enum AuxiliaryKind {
     Cmdline,
 
     /// An initial ramdisk
-    InitRD,
+    InitRd,
 
     /// System.map file
     SystemMap,
@@ -92,7 +92,7 @@ pub enum AuxiliaryKind {
     Config,
 
     /// The `boot.json` file
-    BootJSON,
+    BootJson,
 }
 
 /// An additional file required to be shipped with the kernel,
@@ -232,7 +232,7 @@ impl Schema {
                     }),
                     x if x == initrd_file => Some(AuxiliaryFile {
                         path: path.as_ref().into(),
-                        kind: AuxiliaryKind::InitRD,
+                        kind: AuxiliaryKind::InitRd,
                     }),
                     x if x.starts_with(&initrd_file) => {
                         // Version dependent initrd
@@ -240,7 +240,7 @@ impl Schema {
                             if x.split_once(&initrd_file).is_some() {
                                 Some(AuxiliaryFile {
                                     path: path.as_ref().into(),
-                                    kind: AuxiliaryKind::InitRD,
+                                    kind: AuxiliaryKind::InitRd,
                                 })
                             } else {
                                 None
@@ -255,7 +255,7 @@ impl Schema {
                             if !r.contains('.') {
                                 Some(AuxiliaryFile {
                                     path: path.as_ref().into(),
-                                    kind: AuxiliaryKind::InitRD,
+                                    kind: AuxiliaryKind::InitRd,
                                 })
                             } else {
                                 None
@@ -268,7 +268,7 @@ impl Schema {
                 };
 
                 if let Some(aux_file) = aux {
-                    if matches!(aux_file.kind, AuxiliaryKind::InitRD) {
+                    if matches!(aux_file.kind, AuxiliaryKind::InitRd) {
                         kernel.initrd.push(aux_file);
                     } else {
                         kernel.extras.push(aux_file);
@@ -333,7 +333,7 @@ impl Schema {
                     }),
                     "boot.json" => Some(AuxiliaryFile {
                         path: asset.clone(),
-                        kind: AuxiliaryKind::BootJSON,
+                        kind: AuxiliaryKind::BootJson,
                     }),
                     "config" => Some(AuxiliaryFile {
                         path: asset.clone(),
@@ -341,7 +341,7 @@ impl Schema {
                     }),
                     _ if filename.ends_with(".initrd") => Some(AuxiliaryFile {
                         path: asset.clone(),
-                        kind: AuxiliaryKind::InitRD,
+                        kind: AuxiliaryKind::InitRd,
                     }),
                     _ if filename.ends_with(".cmdline") => Some(AuxiliaryFile {
                         path: asset.clone(),
@@ -351,7 +351,7 @@ impl Schema {
                 };
 
                 if let Some(aux_file) = aux {
-                    if matches!(aux_file.kind, AuxiliaryKind::InitRD) {
+                    if matches!(aux_file.kind, AuxiliaryKind::InitRd) {
                         kernel.initrd.push(aux_file);
                     } else {
                         kernel.extras.push(aux_file);

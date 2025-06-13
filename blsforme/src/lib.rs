@@ -41,16 +41,16 @@ pub enum Error {
     C(#[from] nix::errno::Errno),
 
     #[error("undetected xbootldr")]
-    NoXBOOTLDR,
+    NoXbootldr,
 
     #[error("undetected ESP")]
-    NoESP,
+    NoEsp,
 
     #[error("failed to interact with filesystem properly")]
     InvalidFilesystem,
 
     #[error("generic i/o error")]
-    IO(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error("GPT error")]
     Gpt(#[from] GptError),
@@ -59,7 +59,7 @@ pub enum Error {
     Topology(#[from] topology::disk::Error),
 
     #[error("no ESP mounted in image mode, but detected an ESP at {0}")]
-    UnmountedESP(PathBuf),
+    UnmountedEsp(PathBuf),
 
     #[error("unsupported usage")]
     Unsupported,

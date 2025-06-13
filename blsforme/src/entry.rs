@@ -160,7 +160,7 @@ impl<'a> Entry<'a> {
 
         match effective_schema {
             Schema::Legacy { .. } => match asset.kind {
-                crate::AuxiliaryKind::InitRD => asset
+                crate::AuxiliaryKind::InitRd => asset
                     .path
                     .file_name()
                     .map(|f| f.to_string_lossy())
@@ -170,7 +170,7 @@ impl<'a> Entry<'a> {
             _ => {
                 let filename = asset.path.file_name().map(|f| f.to_string_lossy())?;
                 match asset.kind {
-                    crate::AuxiliaryKind::InitRD => Some(format!("{}/{}", &self.kernel.version, filename)),
+                    crate::AuxiliaryKind::InitRd => Some(format!("{}/{}", &self.kernel.version, filename)),
                     _ => None,
                 }
             }

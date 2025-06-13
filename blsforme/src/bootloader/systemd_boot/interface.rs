@@ -35,10 +35,10 @@ pub const UUID: &str = "4a67b082-0a4c-41cf-b6c7-440b29bb8c4f";
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("failed to decode UTF16 string: {0}")]
-    UTF16Decoding(#[from] FromUtf16Error),
+    Utf16Decoding(#[from] FromUtf16Error),
 
     #[error("i/o error: {0}")]
-    IO(#[from] io::Error),
+    Io(#[from] io::Error),
 
     #[error("malformed utf16 string")]
     Malformed,
@@ -51,7 +51,7 @@ pub enum Error {
 pub enum VariableName {
     TimeInitUSec,
     TimeExecUSec,
-    DevicePartUUID,
+    DevicePartUuid,
     ConfigTimeout,
     ConfigTimeoutOneShot,
     Entries,
@@ -69,7 +69,7 @@ impl VariableName {
         match self {
             VariableName::TimeInitUSec => "LoaderTimeInitUSec",
             VariableName::TimeExecUSec => "LoaderTimeExecUSec",
-            VariableName::DevicePartUUID => "LoaderDevicePartUUID",
+            VariableName::DevicePartUuid => "LoaderDevicePartUUID",
             VariableName::ConfigTimeout => "LoaderConfigTimeout",
             VariableName::ConfigTimeoutOneShot => "LoaderConfigTimeoutOneShot",
             VariableName::Entries => "LoaderEntries",
@@ -105,7 +105,7 @@ impl BootLoaderInterface {
 
     /// Grab the PartUUID for the ESP-booting device
     pub fn get_device_part_uuid(&self) -> Result<String, Error> {
-        Ok(self.get_ucs2_string(VariableName::DevicePartUUID)?.to_lowercase())
+        Ok(self.get_ucs2_string(VariableName::DevicePartUuid)?.to_lowercase())
     }
 
     /// Determine which device "booted", ie the ESP on which systemd-boot lives
