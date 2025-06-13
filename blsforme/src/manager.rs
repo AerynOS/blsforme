@@ -73,7 +73,7 @@ impl<'a> Manager<'a> {
             if entry.is_symlink() {
                 if let Ok(target) = entry.read_link() {
                     if target == PathBuf::from("/dev/null") {
-                        log::trace!("excluding system-wide cmdline.d entry {:?}", entry);
+                        log::trace!("excluding system-wide cmdline.d entry {entry:?}");
                         system_excludes.push(entry.file_name().unwrap_or_default().to_string_lossy().to_string());
                         continue;
                     }
@@ -91,20 +91,14 @@ impl<'a> Manager<'a> {
         log::trace!("boot env: {boot_env:?}");
 
         let mut mounts = Mounts {
-            xbootldr: if let Some(point) = boot_env.xboot_mountpoint.as_ref() {
-                Some(point.clone())
-            } else if boot_env.xbootldr().is_some() {
+            xbootldr: boot_env.xboot_mountpoint.clone().or_else(|| {
+                _ = boot_env.xbootldr()?;
                 Some(config.root.path().join("boot"))
-            } else {
-                None
-            },
-            esp: if let Some(point) = boot_env.esp_mountpoint.as_ref() {
-                Some(point.clone())
-            } else if boot_env.esp().is_some() {
+            }),
+            esp: boot_env.esp_mountpoint.clone().or_else(|| {
+                _ = boot_env.esp()?;
                 Some(config.root.path().join("efi"))
-            } else {
-                None
-            },
+            }),
         };
 
         log::trace!("selected mountpoints: {mounts:?}");
@@ -118,7 +112,7 @@ impl<'a> Manager<'a> {
             }
         }
 
-        let cmdline_joined = cmdline.iter().chain(local_cmdline.iter()).cloned().collect::<Vec<_>>();
+        let cmdline_joined = cmdline.into_iter().chain(local_cmdline).collect::<Vec<_>>();
 
         Ok(Self {
             config,
@@ -165,14 +159,14 @@ impl<'a> Manager<'a> {
         // Got the ESP, not mounted.
         if let Some(hw) = self.boot_env.esp() {
             if self.boot_env.esp_mountpoint.is_none() {
-                let mount_point = self.mounts.esp.clone().ok_or_else(|| Error::NoESP)?;
+                let mount_point = self.mounts.esp.clone().ok_or_else(|| Error::NoEsp)?;
                 mounted_paths.insert(0, self.mount_vfat_partition(hw, &mount_point)?);
             }
         }
         // Got an XBOOTLDR, not mounted..
         if let Some(hw) = self.boot_env.xbootldr() {
             if self.boot_env.xboot_mountpoint.is_none() {
-                let mount_point = self.mounts.xbootldr.clone().ok_or_else(|| Error::NoXBOOTLDR)?;
+                let mount_point = self.mounts.xbootldr.clone().ok_or_else(|| Error::NoXbootldr)?;
                 mounted_paths.insert(0, self.mount_vfat_partition(hw, &mount_point)?);
             }
         }
@@ -215,7 +209,7 @@ impl<'a> Manager<'a> {
         if let Root::Image(_) = self.config.root {
             if let Some(esp) = self.boot_env.esp() {
                 if self.boot_env.esp_mountpoint.is_none() {
-                    return Err(Error::UnmountedESP(esp.clone()));
+                    return Err(Error::UnmountedEsp(esp.clone()));
                 }
             }
         }
@@ -258,7 +252,7 @@ impl Drop for ScopedMount {
         self.mounted = true;
         match umount(&self.point) {
             Ok(_) => log::info!("Unmounted {}", self.point.display()),
-            Err(err) => log::error!("Failed to umount {}: {}", self.point.display(), err.to_string()),
+            Err(err) => log::error!("Failed to umount {}: {}", self.point.display(), err),
         }
     }
 }

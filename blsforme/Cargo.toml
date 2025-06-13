@@ -13,6 +13,5 @@ os-info.workspace = true
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-superblock.workspace = true
 topology = { path = "../crates/topology" }
 gpt.workspace = true

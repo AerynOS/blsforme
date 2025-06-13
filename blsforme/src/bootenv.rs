@@ -6,8 +6,8 @@
 
 use std::{
     collections::HashMap,
-    fs::{self, File},
-    path::PathBuf,
+    fs,
+    path::{Path, PathBuf},
 };
 
 use gpt::{partition_types, GptConfig};
@@ -22,13 +22,13 @@ use crate::{
 ///
 /// By knowing the available firmware (effectively: is `efivarfs` mounted)
 /// we can detect full availability of UEFI features or legacy fallback.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Firmware {
     /// UEFI
-    UEFI,
+    Uefi,
 
     /// Legacy BIOS. Tread carefully
-    BIOS,
+    Bios,
 }
 
 /// Helps access the boot environment, ie `$BOOT` and specific ESP
@@ -51,9 +51,9 @@ impl BootEnvironment {
     /// Return a new BootEnvironment for the given root
     pub fn new(probe: &Probe, disk_parent: Option<PathBuf>, config: &Configuration) -> Result<Self, Error> {
         let firmware = if config.vfs.join("sys").join("firmware").join("efi").exists() {
-            Firmware::UEFI
+            Firmware::Uefi
         } else {
-            Firmware::BIOS
+            Firmware::Bios
         };
 
         let mounts = probe
@@ -70,56 +70,51 @@ impl BootEnvironment {
         };
 
         // If in image mode or if the BLS query failed, use raw discovery of the GPT device.
-        let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(disk_parent, config).ok());
+        let esp = esp_from_bls.or_else(|| Self::determine_esp_by_gpt(&disk_parent?, config).ok());
 
         // Make sure our config is sane!
-        if let Firmware::UEFI = firmware {
-            if esp.is_none() {
-                log::error!("No usable ESP detected for a UEFI system");
-                return Err(Error::NoESP);
-            }
+        if firmware == Firmware::Uefi && esp.is_none() {
+            log::error!("No usable ESP detected for a UEFI system");
+            return Err(Error::NoEsp);
         }
 
-        let esp_mountpoint = esp
-            .as_ref()
-            .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
-
-        // Report ESP and check for XBOOTLDR
-        if let Some(esp_path) = esp.as_ref() {
-            log::info!("EFI System Partition: {}", esp_path.display());
-            let xbootldr = if let Ok(xbootldr) = Self::discover_xbootldr(probe, esp_path, config) {
-                log::info!("EFI XBOOTLDR Partition: {}", xbootldr.display());
-                Some(xbootldr)
-            } else {
-                None
-            };
-
-            let xboot_mountpoint = xbootldr
-                .as_ref()
-                .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
-
-            Ok(Self {
-                xbootldr,
-                esp,
-                firmware,
-                xboot_mountpoint,
-                esp_mountpoint,
-            })
-        } else {
-            Ok(Self {
+        let Some(esp_path) = &esp else {
+            return Ok(Self {
                 xbootldr: None,
                 esp,
                 firmware,
                 xboot_mountpoint: None,
-                esp_mountpoint,
-            })
+                esp_mountpoint: None,
+            });
+        };
+
+        let esp_mountpoint = mounts.get(esp_path).and_then(|m| fs::canonicalize(m.mountpoint).ok());
+
+        // Report ESP and check for XBOOTLDR
+        log::info!("EFI System Partition: {}", esp_path.display());
+
+        let xbootldr = Self::discover_xbootldr(probe, esp_path, config).ok();
+        if let Some(path) = &xbootldr {
+            log::info!("EFI XBOOTLDR Partition: {}", path.display());
         }
+
+        let xboot_mountpoint = xbootldr
+            .as_ref()
+            .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
+
+        Ok(Self {
+            xbootldr,
+            esp,
+            firmware,
+            xboot_mountpoint,
+            esp_mountpoint,
+        })
     }
 
     /// If UEFI we can ask BootLoaderProtocol for help to find out the ESP device.
     fn determine_esp_by_bls(firmware: &Firmware, config: &Configuration) -> Result<PathBuf, Error> {
         // UEFI only tyvm
-        if let Firmware::BIOS = *firmware {
+        if let Firmware::Bios = *firmware {
             return Err(Error::Unsupported);
         }
 
@@ -130,16 +125,14 @@ impl BootEnvironment {
     }
 
     /// Determine ESP by searching relative GPT
-    fn determine_esp_by_gpt(disk_parent: Option<PathBuf>, config: &Configuration) -> Result<PathBuf, Error> {
-        let parent = disk_parent.ok_or(Error::Unsupported)?;
-        log::trace!("Finding ESP on device: {:?}", parent);
-        let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new().writable(false).open_from_device(device)?;
+    fn determine_esp_by_gpt(disk_parent: &Path, config: &Configuration) -> Result<PathBuf, Error> {
+        log::trace!("Finding ESP on device: {disk_parent:?}");
+        let table = GptConfig::new().writable(false).open(disk_parent)?;
         let (_, esp) = table
             .partitions()
             .iter()
             .find(|(_, p)| p.part_type_guid == partition_types::EFI)
-            .ok_or(Error::NoESP)?;
+            .ok_or(Error::NoEsp)?;
         let path = config
             .vfs
             .join("dev")
@@ -152,14 +145,13 @@ impl BootEnvironment {
     /// Discover an XBOOTLDR partition *relative* to wherever the ESP is
     fn discover_xbootldr(probe: &Probe, esp: &PathBuf, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = probe.get_device_parent(esp).ok_or(Error::Unsupported)?;
-        log::trace!("Finding XBOOTLDR on device: {:?}", parent);
-        let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new().writable(false).open_from_device(device)?;
+        log::trace!("Finding XBOOTLDR on device: {parent:?}");
+        let table = GptConfig::new().writable(false).open(parent)?;
         let (_, esp) = table
             .partitions()
             .iter()
             .find(|(_, p)| p.part_type_guid == partition_types::FREEDESK_BOOT)
-            .ok_or(Error::NoXBOOTLDR)?;
+            .ok_or(Error::NoXbootldr)?;
         let path = config
             .vfs
             .join("dev")

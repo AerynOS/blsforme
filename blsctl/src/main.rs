@@ -143,7 +143,7 @@ fn query_schema(os_release: OsRelease) -> color_eyre::Result<Schema> {
 
 fn inspect_root(config: &Configuration) -> color_eyre::Result<()> {
     if let Err(e) = check_permissions() {
-        log::error!("{:#}", e);
+        log::error!("{e:#}");
         return Ok(());
     }
 
@@ -177,7 +177,7 @@ fn inspect_root(config: &Configuration) -> color_eyre::Result<()> {
         if let Some(json) = kernel
             .extras
             .iter()
-            .find(|e| matches!(e.kind, blsforme::AuxiliaryKind::BootJSON))
+            .find(|e| matches!(e.kind, blsforme::AuxiliaryKind::BootJson))
         {
             let text = fs::read_to_string(&json.path)?;
             let decoded = BootJSON::try_from(text.as_str())?;

@@ -72,13 +72,8 @@ pub fn changed_files(files: &[(PathBuf, PathBuf)]) -> Vec<(&PathBuf, &PathBuf)> 
     files
         .iter()
         .filter_map(|(source, dest)| match files_identical(&mut hasher, source, dest) {
-            Ok(same) => {
-                if same {
-                    None
-                } else {
-                    Some((source, dest))
-                }
-            }
+            Ok(true) => None,
+            Ok(false) => Some((source, dest)),
             Err(_) => Some((source, dest)),
         })
         .collect::<Vec<_>>()

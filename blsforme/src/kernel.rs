@@ -83,7 +83,7 @@ pub enum AuxiliaryKind {
     Cmdline,
 
     /// An initial ramdisk
-    InitRD,
+    InitRd,
 
     /// System.map file
     SystemMap,
@@ -92,7 +92,7 @@ pub enum AuxiliaryKind {
     Config,
 
     /// The `boot.json` file
-    BootJSON,
+    BootJson,
 }
 
 /// An additional file required to be shipped with the kernel,
@@ -161,13 +161,9 @@ impl Schema {
     ) -> Result<Vec<Kernel>, Error> {
         let paths = paths.collect::<Vec<_>>();
         // First up, find kernels. They start with the prefix..
-        let candidates = paths.iter().filter_map(|p| {
-            if p.as_ref().file_name()?.to_str()?.starts_with(namespace) {
-                Some(p)
-            } else {
-                None
-            }
-        });
+        let candidates = paths
+            .iter()
+            .filter_map(|p| p.as_ref().file_name()?.to_str()?.starts_with(namespace).then_some(p));
 
         let mut kernels = BTreeMap::new();
 
@@ -197,15 +193,15 @@ impl Schema {
 
         // Find all the AUX files
         for (version, kernel) in kernels.iter_mut() {
-            let variant_str = kernel.variant.as_ref().map(|v| format!(".{}", v)).unwrap_or_default();
-            let sysmap_file = format!("System.map-{}{}", version, variant_str);
-            let cmdline_file = format!("cmdline-{}{}", version, variant_str);
-            let config_file = format!("config-{}{}", version, variant_str);
-            let indep_initrd = format!("initrd-{}.", namespace);
+            let variant_str = kernel.variant.as_ref().map(|v| format!(".{v}")).unwrap_or_default();
+            let sysmap_file = format!("System.map-{version}{variant_str}");
+            let cmdline_file = format!("cmdline-{version}{variant_str}");
+            let config_file = format!("config-{version}{variant_str}");
+            let indep_initrd = format!("initrd-{namespace}.");
             let initrd_file = format!(
                 "initrd-{}{}{}",
                 namespace,
-                kernel.variant.as_ref().map(|v| format!(".{}.", v)).unwrap_or_default(),
+                kernel.variant.as_ref().map(|v| format!(".{v}.")).unwrap_or_default(),
                 version
             );
 
@@ -232,19 +228,15 @@ impl Schema {
                     }),
                     x if x == initrd_file => Some(AuxiliaryFile {
                         path: path.as_ref().into(),
-                        kind: AuxiliaryKind::InitRD,
+                        kind: AuxiliaryKind::InitRd,
                     }),
                     x if x.starts_with(&initrd_file) => {
                         // Version dependent initrd
-                        if x != initrd_file {
-                            if x.split_once(&initrd_file).is_some() {
-                                Some(AuxiliaryFile {
-                                    path: path.as_ref().into(),
-                                    kind: AuxiliaryKind::InitRD,
-                                })
-                            } else {
-                                None
-                            }
+                        if x != initrd_file && x.split_once(&initrd_file).is_some() {
+                            Some(AuxiliaryFile {
+                                path: path.as_ref().into(),
+                                kind: AuxiliaryKind::InitRd,
+                            })
                         } else {
                             None
                         }
@@ -255,7 +247,7 @@ impl Schema {
                             if !r.contains('.') {
                                 Some(AuxiliaryFile {
                                     path: path.as_ref().into(),
-                                    kind: AuxiliaryKind::InitRD,
+                                    kind: AuxiliaryKind::InitRd,
                                 })
                             } else {
                                 None
@@ -268,7 +260,7 @@ impl Schema {
                 };
 
                 if let Some(aux_file) = aux {
-                    if matches!(aux_file.kind, AuxiliaryKind::InitRD) {
+                    if matches!(aux_file.kind, AuxiliaryKind::InitRd) {
                         kernel.initrd.push(aux_file);
                     } else {
                         kernel.extras.push(aux_file);
@@ -333,7 +325,7 @@ impl Schema {
                     }),
                     "boot.json" => Some(AuxiliaryFile {
                         path: asset.clone(),
-                        kind: AuxiliaryKind::BootJSON,
+                        kind: AuxiliaryKind::BootJson,
                     }),
                     "config" => Some(AuxiliaryFile {
                         path: asset.clone(),
@@ -341,7 +333,7 @@ impl Schema {
                     }),
                     _ if filename.ends_with(".initrd") => Some(AuxiliaryFile {
                         path: asset.clone(),
-                        kind: AuxiliaryKind::InitRD,
+                        kind: AuxiliaryKind::InitRd,
                     }),
                     _ if filename.ends_with(".cmdline") => Some(AuxiliaryFile {
                         path: asset.clone(),
@@ -351,7 +343,7 @@ impl Schema {
                 };
 
                 if let Some(aux_file) = aux {
-                    if matches!(aux_file.kind, AuxiliaryKind::InitRD) {
+                    if matches!(aux_file.kind, AuxiliaryKind::InitRd) {
                         kernel.initrd.push(aux_file);
                     } else {
                         kernel.extras.push(aux_file);

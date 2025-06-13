@@ -125,16 +125,14 @@ impl Probe {
 
     /// Determine the composite rootfs device for the given mountpoint,
     /// building a set of superblocks and necessary `/proc/cmdline` arguments
-    pub fn get_rootfs_device(&self, path: impl AsRef<Path>) -> Result<BlockDevice, super::Error> {
+    pub fn get_rootfs_device(&self, path: impl AsRef<Path>) -> Result<BlockDevice<'_>, super::Error> {
         let path = path.as_ref();
         let device = self.get_device_from_mountpoint(path)?;
 
         // Scan GPT for PartUUID
-        let guid = if let Some(parent) = self.get_device_parent(&device) {
-            self.get_device_guid(parent, &device)
-        } else {
-            None
-        };
+        let guid = self
+            .get_device_parent(&device)
+            .and_then(|parent| self.get_device_guid(parent, &device));
 
         let chain = self.get_device_chain(&device)?;
         let mut custodials = vec![device.clone()];

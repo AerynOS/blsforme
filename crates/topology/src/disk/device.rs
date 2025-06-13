@@ -87,12 +87,9 @@ impl<'a> BlockDevice<'a> {
         let mount = self.mountpoint.as_ref().and_then(|m| mounts.get(m));
         let mount_options = if let Some(mp) = mount {
             mp.options()
-                .filter_map(|o| {
-                    if let MountOption::Option(k, v) = o {
-                        Some((k, v))
-                    } else {
-                        None
-                    }
+                .filter_map(|o| match o {
+                    MountOption::Option(k, v) => Some((k, v)),
+                    _ => None,
                 })
                 .collect::<HashMap<_, _>>()
         } else {
@@ -104,20 +101,20 @@ impl<'a> BlockDevice<'a> {
                 superblock::Kind::Btrfs => {
                     let uuid = self.uuid.as_ref().expect("cannot have btrfs without uuid..");
                     if let Some(subvol) = mount_options.get("subvol") {
-                        format!("root=UUID={} rootfsflags=subvol={}", uuid, subvol)
+                        format!("root=UUID={uuid} rootfsflags=subvol={subvol}")
                     } else {
-                        format!("root=UUID={}", uuid)
+                        format!("root=UUID={uuid}")
                     }
                 }
                 superblock::Kind::LUKS2 => {
                     let uuid = self.uuid.as_ref().expect("cannot have luks2 without uuid");
-                    format!("rd.luks.uuid={}", uuid)
+                    format!("rd.luks.uuid={uuid}")
                 }
                 _ => {
                     if let Some(guid) = self.guid.as_ref() {
-                        format!("root=PARTUUID={}", guid)
+                        format!("root=PARTUUID={guid}")
                     } else if let Some(uuid) = self.uuid.as_ref() {
-                        format!("root=UUID={}", uuid)
+                        format!("root=UUID={uuid}")
                     } else {
                         String::new()
                     }
@@ -129,6 +126,6 @@ impl<'a> BlockDevice<'a> {
             String::new()
         };
 
-        format!("{} {}", local, children).trim().to_owned()
+        format!("{local} {children}").trim().to_owned()
     }
 }

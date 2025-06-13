@@ -147,7 +147,7 @@ impl<'a> Entry<'a> {
                 .image
                 .file_name()
                 .map(|f| f.to_string_lossy())
-                .map(|filename| format!("kernel-{}", filename)),
+                .map(|filename| format!("kernel-{filename}")),
             _ => Some(format!("{}/vmlinuz", self.kernel.version)),
         }
     }
@@ -160,17 +160,17 @@ impl<'a> Entry<'a> {
 
         match effective_schema {
             Schema::Legacy { .. } => match asset.kind {
-                crate::AuxiliaryKind::InitRD => asset
+                crate::AuxiliaryKind::InitRd => asset
                     .path
                     .file_name()
                     .map(|f| f.to_string_lossy())
-                    .map(|filename| format!("initrd-{}", filename)),
+                    .map(|filename| format!("initrd-{filename}")),
                 _ => None,
             },
             _ => {
                 let filename = asset.path.file_name().map(|f| f.to_string_lossy())?;
                 match asset.kind {
-                    crate::AuxiliaryKind::InitRD => Some(format!("{}/{}", &self.kernel.version, filename)),
+                    crate::AuxiliaryKind::InitRd => Some(format!("{}/{}", &self.kernel.version, filename)),
                     _ => None,
                 }
             }
