@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use thiserror::Error;
+use snafu::Snafu;
 
 mod builder;
 pub use builder::Builder;
@@ -14,23 +14,26 @@ pub mod device;
 pub mod mounts;
 pub mod probe;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
 pub enum Error {
-    #[error("from io: {0}")]
-    Io(#[from] std::io::Error),
+    #[snafu(display("failed to canonicalize path: {source}"))]
+    Canonicalize { source: std::io::Error },
 
-    #[error("c stdlib: {0}")]
-    StdLib(#[from] nix::Error),
+    #[snafu(display("from io: {source}"))]
+    Io { source: std::io::Error },
 
-    #[error("no such mount: {0}")]
-    UnknownMount(PathBuf),
+    #[snafu(display("c stdlib: {source}"))]
+    Nix { source: nix::Error },
 
-    #[error("no such device: {0}")]
-    InvalidDevice(PathBuf),
+    #[snafu(display("no such mount: {path:?}"))]
+    UnknownMount { path: PathBuf },
 
-    #[error("failed to read superblock: {0}")]
-    Superblock(#[from] superblock::Error),
+    #[snafu(display("no such device: {path:?}"))]
+    InvalidDevice { path: PathBuf },
 
-    #[error("superblock contains invalid unicode: {0}")]
-    SuperblockUnicode(#[from] superblock::UnicodeError),
+    #[snafu(context(false), display("failed to read superblock: {source}"))]
+    Superblock { source: superblock::Error },
+
+    #[snafu(context(false), display("superblock contains invalid unicode: {source}"))]
+    SuperblockUnicode { source: superblock::UnicodeError },
 }

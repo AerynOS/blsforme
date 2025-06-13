@@ -24,5 +24,6 @@ os-info = { git = "https://github.com/AerynOS/os-info", rev = "a3f68452502c0ff2e
 superblock = { git = "https://github.com/AerynOS/disks-rs", rev = "437299f58e19ec8dc3a6699a918ee3dbece72bd3" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+snafu = "0.8.6"
 uuid = { version = "1.14.0", features = ["v8"] }
 zstd = "0.13.3"

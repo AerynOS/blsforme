@@ -6,8 +6,9 @@
 use std::path::PathBuf;
 
 use fs_err as fs;
+use snafu::ResultExt as _;
 
-use super::mounts::Table;
+use super::{mounts::Table, CanonicalizeSnafu};
 use crate::disk::probe::Probe;
 
 /// Builder pattern for a Probe
@@ -56,9 +57,9 @@ impl Builder {
     /// Note: All input paths will be verified
     pub fn build(self) -> Result<Probe, super::Error> {
         let mut result = Probe {
-            sysfs: fs::canonicalize(self.sysfs)?,
-            devfs: fs::canonicalize(self.devfs)?,
-            procfs: fs::canonicalize(self.procfs)?,
+            sysfs: fs::canonicalize(self.sysfs).context(CanonicalizeSnafu)?,
+            devfs: fs::canonicalize(self.devfs).context(CanonicalizeSnafu)?,
+            procfs: fs::canonicalize(self.procfs).context(CanonicalizeSnafu)?,
             mounts: Table::default(),
         };
         result.init_scan()?;

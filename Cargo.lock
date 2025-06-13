@@ -1021,8 +1021,8 @@ dependencies = [
  "gpt",
  "log",
  "nix",
+ "snafu",
  "superblock",
- "thiserror",
 ]
 
 [[package]]
