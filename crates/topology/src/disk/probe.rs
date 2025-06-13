@@ -4,11 +4,9 @@
 
 //! Disk probe/query APIs
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
+use fs_err as fs;
 use nix::sys::stat;
 use superblock::Superblock;
 
@@ -158,8 +156,8 @@ impl Probe {
     }
 
     /// For GPT disks return the PartUUID (GUID)
-    pub fn get_device_guid(&self, parent: impl AsRef<Path>, path: impl AsRef<Path>) -> Option<String> {
-        let device = fs::canonicalize(path.as_ref()).ok()?;
+    pub fn get_device_guid(&self, parent: PathBuf, path: &Path) -> Option<String> {
+        let device = fs::canonicalize(path).ok()?;
         let sysfs_path = fs::canonicalize(
             device
                 .file_name()

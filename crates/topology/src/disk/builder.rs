@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //! Builder API for constructing the Probe
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::disk::probe::Probe;
+use fs_err as fs;
 
 use super::mounts::Table;
+use crate::disk::probe::Probe;
 
 /// Builder pattern for a Probe
 pub struct Builder {

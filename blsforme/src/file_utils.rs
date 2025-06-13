@@ -5,13 +5,13 @@
 //! File utilities shared between the blsforme APIs
 
 use std::{
-    fs::{self, create_dir_all, File},
     io,
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
 use crate::Error;
+use fs_err::{self as fs, File};
 
 /// Case-insensitive path joining for FAT, respecting existing entries on the filesystem
 /// Note, this discards errors, so will require read permissions
@@ -100,7 +100,7 @@ pub fn copy_atomic_vfat(
     // Ensure leading path structure exists
     let dir_leading = dest.parent().ok_or_else(|| Error::InvalidFilesystem)?;
     if !dir_leading.exists() {
-        create_dir_all(dir_leading)?;
+        fs::create_dir_all(dir_leading)?;
     }
 
     // open source/dest

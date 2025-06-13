@@ -10,11 +10,12 @@
 
 use std::{
     fmt::Display,
-    fs, io,
+    io,
     path::{self, Path, PathBuf},
     string::FromUtf16Error,
 };
 
+use fs_err as fs;
 use thiserror::Error;
 
 /// Simple encapsulation of a Boot Loader Interface over efivars

@@ -16,6 +16,7 @@ members = [
 [workspace.dependencies]
 blake3 = { version = "1.6.0", features = ["mmap", "rayon"] }
 log = "0.4.26"
+fs-err = "3.1.1"
 gpt = "4.1.0"
 thiserror = "2.0.11"
 nix = { version = "0.30.1", features = ["fs", "mount"] }

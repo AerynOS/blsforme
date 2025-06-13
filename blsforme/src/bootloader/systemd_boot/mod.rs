@@ -4,10 +4,9 @@
 
 //! systemd-boot management and interfaces
 
-use std::{
-    fs::{self, create_dir_all},
-    path::PathBuf,
-};
+use std::path::PathBuf;
+
+use fs_err as fs;
 
 use crate::{
     file_utils::{changed_files, copy_atomic_vfat, PathExt},
@@ -104,7 +103,7 @@ impl<'a, 'b> Loader<'a, 'b> {
         let loader_conf_dir = self.boot_root.join_insensitive("loader");
         let loader_conf_path = loader_conf_dir.join_insensitive("loader.conf");
         if !loader_conf_dir.exists() {
-            create_dir_all(loader_conf_dir)?;
+            fs::create_dir_all(loader_conf_dir)?;
         }
 
         // Create a default pattern that matches all entries for our namespace
@@ -293,7 +292,7 @@ impl<'a, 'b> Loader<'a, 'b> {
 
         let entry_dir = self.boot_root.join_insensitive("loader").join_insensitive("entries");
         if !entry_dir.exists() {
-            create_dir_all(entry_dir)?;
+            fs::create_dir_all(entry_dir)?;
         }
 
         let tracker = InstallResult {

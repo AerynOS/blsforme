@@ -4,6 +4,8 @@
 
 use std::path::PathBuf;
 
+use fs_err as fs;
+
 use crate::{file_utils::cmdline_snippet, AuxiliaryFile, Configuration, Kernel, Schema};
 
 /// A cmdline entry is found in the `$sysroot/usr/lib/kernel/cmdline.d` directory
@@ -71,7 +73,7 @@ impl<'a> Entry<'a> {
             return Ok(());
         }
 
-        let entries = std::fs::read_dir(&cmdline_d)?;
+        let entries = fs::read_dir(&cmdline_d)?;
 
         for entry in entries.filter_map(Result::ok) {
             let name = entry.file_name().to_string_lossy().to_string();

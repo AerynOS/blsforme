@@ -12,3 +12,4 @@ log.workspace = true
 os-info.workspace = true
 pretty_env_logger = "0.5.0"
 nix.workspace = true
+fs-err.workspace = true
