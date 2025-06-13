@@ -174,7 +174,6 @@ impl Probe {
         let fi = fs::File::open(parent).ok()?;
         let gpt_header = gpt::GptConfig::new()
             .writable(false)
-            .initialized(true)
             .open_from_device(Box::new(fi))
             .ok()?;
         gpt_header

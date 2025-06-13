@@ -134,10 +134,7 @@ impl BootEnvironment {
         let parent = disk_parent.ok_or(Error::Unsupported)?;
         log::trace!("Finding ESP on device: {:?}", parent);
         let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new()
-            .initialized(true)
-            .writable(false)
-            .open_from_device(device)?;
+        let table = GptConfig::new().writable(false).open_from_device(device)?;
         let (_, esp) = table
             .partitions()
             .iter()
@@ -157,10 +154,7 @@ impl BootEnvironment {
         let parent = probe.get_device_parent(esp).ok_or(Error::Unsupported)?;
         log::trace!("Finding XBOOTLDR on device: {:?}", parent);
         let device = Box::new(File::open(&parent)?);
-        let table = GptConfig::new()
-            .initialized(true)
-            .writable(false)
-            .open_from_device(device)?;
+        let table = GptConfig::new().writable(false).open_from_device(device)?;
         let (_, esp) = table
             .partitions()
             .iter()

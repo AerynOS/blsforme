@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 use bootloader::systemd_boot;
+use gpt::GptError;
 use thiserror::Error;
 
 mod kernel;
@@ -50,6 +51,9 @@ pub enum Error {
 
     #[error("generic i/o error")]
     IO(#[from] std::io::Error),
+
+    #[error("GPT error")]
+    Gpt(#[from] GptError),
 
     #[error("topology scan: {0}")]
     Topology(#[from] topology::disk::Error),
