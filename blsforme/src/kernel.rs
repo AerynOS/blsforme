@@ -209,9 +209,9 @@ impl Schema {
                 let filename = path
                     .as_ref()
                     .file_name()
-                    .ok_or_else(|| Error::InvalidFilesystem)?
+                    .ok_or(Error::InvalidFilesystem)?
                     .to_str()
-                    .ok_or_else(|| Error::InvalidFilesystem)?;
+                    .ok_or(Error::InvalidFilesystem)?;
 
                 let aux = match filename {
                     x if x == sysmap_file => Some(AuxiliaryFile {
@@ -306,18 +306,18 @@ impl Schema {
             let lepath = kernel
                 .image
                 .parent()
-                .ok_or_else(|| Error::InvalidFilesystem)?
+                .ok_or(Error::InvalidFilesystem)?
                 .to_str()
-                .ok_or_else(|| Error::InvalidFilesystem)?;
+                .ok_or(Error::InvalidFilesystem)?;
             let versioned_assets = all_paths
                 .iter()
                 .filter(|p| !p.ends_with("vmlinuz") && p.starts_with(lepath) && !p.ends_with(version));
             for asset in versioned_assets {
                 let filename = asset
                     .file_name()
-                    .ok_or_else(|| Error::InvalidFilesystem)?
+                    .ok_or(Error::InvalidFilesystem)?
                     .to_str()
-                    .ok_or_else(|| Error::InvalidFilesystem)?;
+                    .ok_or(Error::InvalidFilesystem)?;
                 let aux = match filename {
                     "System.map" => Some(AuxiliaryFile {
                         path: asset.clone(),
