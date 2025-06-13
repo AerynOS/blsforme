@@ -26,9 +26,6 @@ pub enum Error {
 
     #[error("wip: {0}")]
     Prefix(#[from] StripPrefixError),
-
-    #[error("error: {0}")]
-    Any(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 #[derive(Debug)]

@@ -84,10 +84,7 @@ pub fn changed_files(files: &[(PathBuf, PathBuf)]) -> Vec<(&PathBuf, &PathBuf)> 
 /// Long story short we always set a temporary file name up,
 /// then delete the target file, and finally rename into place.
 /// This is to prevent various block corruption issues with vfat.
-pub fn copy_atomic_vfat(
-    source: impl AsRef<Path>,
-    dest: impl AsRef<Path>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub fn copy_atomic_vfat(source: impl AsRef<Path>, dest: impl AsRef<Path>) -> io::Result<()> {
     let source = source.as_ref();
     let dest = dest.as_ref();
 
@@ -98,7 +95,9 @@ pub fn copy_atomic_vfat(
     let dest_exists = dest.exists();
 
     // Ensure leading path structure exists
-    let dir_leading = dest.parent().ok_or_else(|| Error::InvalidFilesystem)?;
+    let dir_leading = dest
+        .parent()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid copy destination"))?;
     if !dir_leading.exists() {
         fs::create_dir_all(dir_leading)?;
     }
@@ -113,17 +112,17 @@ pub fn copy_atomic_vfat(
 
     // Copy *contents* only
     io::copy(&mut input, &mut output)?;
-    nix::unistd::syncfs(&output)?;
+    nix::unistd::syncfs(&output).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
 
     // Remove original destination file
     if dest_exists {
         fs::remove_file(dest)?;
-        nix::unistd::syncfs(&output)?;
+        nix::unistd::syncfs(&output).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
     }
 
     // Rename into final location
     fs::rename(dest_temp, dest)?;
-    nix::unistd::syncfs(&output)?;
+    nix::unistd::syncfs(&output).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
 
     log::info!("Updated VFAT file: {}", dest.display());
 
