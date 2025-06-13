@@ -147,7 +147,7 @@ impl<'a> Entry<'a> {
                 .image
                 .file_name()
                 .map(|f| f.to_string_lossy())
-                .map(|filename| format!("kernel-{}", filename)),
+                .map(|filename| format!("kernel-{filename}")),
             _ => Some(format!("{}/vmlinuz", self.kernel.version)),
         }
     }
@@ -164,7 +164,7 @@ impl<'a> Entry<'a> {
                     .path
                     .file_name()
                     .map(|f| f.to_string_lossy())
-                    .map(|filename| format!("initrd-{}", filename)),
+                    .map(|filename| format!("initrd-{filename}")),
                 _ => None,
             },
             _ => {

@@ -73,7 +73,7 @@ impl<'a> Manager<'a> {
             if entry.is_symlink() {
                 if let Ok(target) = entry.read_link() {
                     if target == PathBuf::from("/dev/null") {
-                        log::trace!("excluding system-wide cmdline.d entry {:?}", entry);
+                        log::trace!("excluding system-wide cmdline.d entry {entry:?}");
                         system_excludes.push(entry.file_name().unwrap_or_default().to_string_lossy().to_string());
                         continue;
                     }
@@ -258,7 +258,7 @@ impl Drop for ScopedMount {
         self.mounted = true;
         match umount(&self.point) {
             Ok(_) => log::info!("Unmounted {}", self.point.display()),
-            Err(err) => log::error!("Failed to umount {}: {}", self.point.display(), err.to_string()),
+            Err(err) => log::error!("Failed to umount {}: {}", self.point.display(), err),
         }
     }
 }

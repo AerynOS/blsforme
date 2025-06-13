@@ -271,7 +271,7 @@ impl<'a, 'b> Loader<'a, 'b> {
             })
             .collect::<Vec<_>>();
         log::trace!("with kernel path: {}", vmlinuz.display());
-        log::trace!("with initrds: {:?}", initrds);
+        log::trace!("with initrds: {initrds:?}");
 
         // build up the total changeset
         let mut changeset = vec![(sysroot.join(&entry.kernel.image), vmlinuz.clone())];
@@ -329,7 +329,7 @@ impl<'a, 'b> Loader<'a, 'b> {
                     ))
                 })
                 .collect::<String>();
-            format!("\n{}", initrds)
+            format!("\n{initrds}")
         };
         let title = if let Some(pretty) = effective_schema.os_display_name() {
             format!("{pretty} ({})", entry.kernel.version)
@@ -339,10 +339,9 @@ impl<'a, 'b> Loader<'a, 'b> {
         let vmlinuz = entry.installed_kernel_name(effective_schema).expect("linux go boom");
         format!(
             r###"title {title}
-linux /{asset_dir}/{}{}
+linux /{asset_dir}/{vmlinuz}{initrd}
 options {cmdline}
-"###,
-            vmlinuz, initrd
+"###
         )
     }
 

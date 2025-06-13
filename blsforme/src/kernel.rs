@@ -197,15 +197,15 @@ impl Schema {
 
         // Find all the AUX files
         for (version, kernel) in kernels.iter_mut() {
-            let variant_str = kernel.variant.as_ref().map(|v| format!(".{}", v)).unwrap_or_default();
-            let sysmap_file = format!("System.map-{}{}", version, variant_str);
-            let cmdline_file = format!("cmdline-{}{}", version, variant_str);
-            let config_file = format!("config-{}{}", version, variant_str);
-            let indep_initrd = format!("initrd-{}.", namespace);
+            let variant_str = kernel.variant.as_ref().map(|v| format!(".{v}")).unwrap_or_default();
+            let sysmap_file = format!("System.map-{version}{variant_str}");
+            let cmdline_file = format!("cmdline-{version}{variant_str}");
+            let config_file = format!("config-{version}{variant_str}");
+            let indep_initrd = format!("initrd-{namespace}.");
             let initrd_file = format!(
                 "initrd-{}{}{}",
                 namespace,
-                kernel.variant.as_ref().map(|v| format!(".{}.", v)).unwrap_or_default(),
+                kernel.variant.as_ref().map(|v| format!(".{v}.")).unwrap_or_default(),
                 version
             );
 

@@ -132,7 +132,7 @@ impl BootEnvironment {
     /// Determine ESP by searching relative GPT
     fn determine_esp_by_gpt(disk_parent: Option<PathBuf>, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = disk_parent.ok_or(Error::Unsupported)?;
-        log::trace!("Finding ESP on device: {:?}", parent);
+        log::trace!("Finding ESP on device: {parent:?}");
         let device = Box::new(File::open(&parent)?);
         let table = GptConfig::new().writable(false).open_from_device(device)?;
         let (_, esp) = table
@@ -152,7 +152,7 @@ impl BootEnvironment {
     /// Discover an XBOOTLDR partition *relative* to wherever the ESP is
     fn discover_xbootldr(probe: &Probe, esp: &PathBuf, config: &Configuration) -> Result<PathBuf, Error> {
         let parent = probe.get_device_parent(esp).ok_or(Error::Unsupported)?;
-        log::trace!("Finding XBOOTLDR on device: {:?}", parent);
+        log::trace!("Finding XBOOTLDR on device: {parent:?}");
         let device = Box::new(File::open(&parent)?);
         let table = GptConfig::new().writable(false).open_from_device(device)?;
         let (_, esp) = table

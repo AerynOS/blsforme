@@ -49,7 +49,7 @@ impl MountOption<'_> {
 
 impl Mount<'_> {
     /// Convert [`Mount::opts`] into an iterator of typed options
-    pub fn options(&self) -> impl Iterator<Item = MountOption> {
+    pub fn options(&self) -> impl Iterator<Item = MountOption<'_>> {
         self.opts.split(',').map(|o| {
             if let Some((k, v)) = o.split_once('=') {
                 MountOption::Option(k, v)
@@ -77,7 +77,7 @@ impl Table {
     }
 
     /// Iterate all mount points (no copy)
-    pub fn iter(&self) -> impl Iterator<Item = Mount> {
+    pub fn iter(&self) -> impl Iterator<Item = Mount<'_>> {
         self.data.lines().filter_map(|i| {
             let mut splits = i.split_ascii_whitespace();
             Some(Mount {

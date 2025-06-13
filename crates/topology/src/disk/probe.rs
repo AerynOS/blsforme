@@ -125,7 +125,7 @@ impl Probe {
 
     /// Determine the composite rootfs device for the given mountpoint,
     /// building a set of superblocks and necessary `/proc/cmdline` arguments
-    pub fn get_rootfs_device(&self, path: impl AsRef<Path>) -> Result<BlockDevice, super::Error> {
+    pub fn get_rootfs_device(&self, path: impl AsRef<Path>) -> Result<BlockDevice<'_>, super::Error> {
         let path = path.as_ref();
         let device = self.get_device_from_mountpoint(path)?;
 

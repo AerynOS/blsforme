@@ -143,7 +143,7 @@ fn query_schema(os_release: OsRelease) -> color_eyre::Result<Schema> {
 
 fn inspect_root(config: &Configuration) -> color_eyre::Result<()> {
     if let Err(e) = check_permissions() {
-        log::error!("{:#}", e);
+        log::error!("{e:#}");
         return Ok(());
     }
 
