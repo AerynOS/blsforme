@@ -80,40 +80,38 @@ impl BootEnvironment {
             }
         }
 
-        let esp_mountpoint = esp
-            .as_ref()
-            .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
-
-        // Report ESP and check for XBOOTLDR
-        if let Some(esp_path) = esp.as_ref() {
-            log::info!("EFI System Partition: {}", esp_path.display());
-            let xbootldr = if let Ok(xbootldr) = Self::discover_xbootldr(probe, esp_path, config) {
-                log::info!("EFI XBOOTLDR Partition: {}", xbootldr.display());
-                Some(xbootldr)
-            } else {
-                None
-            };
-
-            let xboot_mountpoint = xbootldr
-                .as_ref()
-                .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
-
-            Ok(Self {
-                xbootldr,
-                esp,
-                firmware,
-                xboot_mountpoint,
-                esp_mountpoint,
-            })
-        } else {
-            Ok(Self {
+        let Some(esp_path) = &esp else {
+            return Ok(Self {
                 xbootldr: None,
                 esp,
                 firmware,
                 xboot_mountpoint: None,
-                esp_mountpoint,
-            })
-        }
+                esp_mountpoint: None,
+            });
+        };
+
+        let esp_mountpoint = mounts.get(esp_path).and_then(|m| fs::canonicalize(m.mountpoint).ok());
+
+        // Report ESP and check for XBOOTLDR
+        log::info!("EFI System Partition: {}", esp_path.display());
+        let xbootldr = if let Ok(xbootldr) = Self::discover_xbootldr(probe, esp_path, config) {
+            log::info!("EFI XBOOTLDR Partition: {}", xbootldr.display());
+            Some(xbootldr)
+        } else {
+            None
+        };
+
+        let xboot_mountpoint = xbootldr
+            .as_ref()
+            .and_then(|e| fs::canonicalize(mounts.get(e)?.mountpoint).ok());
+
+        Ok(Self {
+            xbootldr,
+            esp,
+            firmware,
+            xboot_mountpoint,
+            esp_mountpoint,
+        })
     }
 
     /// If UEFI we can ask BootLoaderProtocol for help to find out the ESP device.
