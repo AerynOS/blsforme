@@ -20,8 +20,8 @@ fs-err = "3.1.1"
 gpt = "4.1.0"
 thiserror = "2.0.11"
 nix = { version = "0.30.1", features = ["fs", "mount"] }
-os-info = { git = "https://github.com/AerynOS/os-info", rev = "a3f68452502c0ff2e17449449b50cd665f11173d" }
-superblock = { git = "https://github.com/AerynOS/disks-rs", rev = "437299f58e19ec8dc3a6699a918ee3dbece72bd3" }
+os-info = { git = "https://github.com/AerynOS/os-info", rev = "503a4bb97d558d8c821bcd4362d3ec06db29e0a6" }
+superblock = { git = "https://github.com/AerynOS/disks-rs", rev = "0768fe553b123b2086980bc809011e9786bffd95" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 snafu = "0.8.6"

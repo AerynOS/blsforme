@@ -713,7 +713,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "os-info"
 version = "0.1.0"
-source = "git+https://github.com/AerynOS/os-info?rev=a3f68452502c0ff2e17449449b50cd665f11173d#a3f68452502c0ff2e17449449b50cd665f11173d"
+source = "git+https://github.com/AerynOS/os-info?rev=503a4bb97d558d8c821bcd4362d3ec06db29e0a6#503a4bb97d558d8c821bcd4362d3ec06db29e0a6"
 dependencies = [
  "chrono",
  "serde",
@@ -934,7 +934,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "superblock"
 version = "0.1.0"
-source = "git+https://github.com/AerynOS/disks-rs?rev=437299f58e19ec8dc3a6699a918ee3dbece72bd3#437299f58e19ec8dc3a6699a918ee3dbece72bd3"
+source = "git+https://github.com/AerynOS/disks-rs?rev=0768fe553b123b2086980bc809011e9786bffd95#0768fe553b123b2086980bc809011e9786bffd95"
 dependencies = [
  "serde",
  "serde_json",
