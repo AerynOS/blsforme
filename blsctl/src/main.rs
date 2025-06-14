@@ -10,9 +10,9 @@ use std::{
     str::FromStr,
 };
 
-use blsforme::{os_release::OsRelease, BootJSON, Configuration, Entry, Manager, Root, Schema};
+use blsforme::{BootJSON, Configuration, Entry, Manager, Root, Schema, os_release::OsRelease};
 use clap::{Parser, Subcommand};
-use color_eyre::{eyre::eyre, Section};
+use color_eyre::{Section, eyre::eyre};
 use fs_err as fs;
 
 use pretty_env_logger::formatted_builder;

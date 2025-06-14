@@ -11,7 +11,7 @@ use nix::sys::stat;
 use snafu::{OptionExt, ResultExt as _};
 use superblock::Superblock;
 
-use super::{device::BlockDevice, mounts::Table, CanonicalizeSnafu, InvalidDeviceSnafu, IoSnafu, NixSnafu};
+use super::{CanonicalizeSnafu, InvalidDeviceSnafu, IoSnafu, NixSnafu, device::BlockDevice, mounts::Table};
 
 /// A Disk probe to query disks
 #[derive(Debug)]

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use fs_err as fs;
 use snafu::ResultExt as _;
 
-use crate::{file_utils::cmdline_snippet, AuxiliaryFile, Configuration, IoSnafu, Kernel, Schema};
+use crate::{AuxiliaryFile, Configuration, IoSnafu, Kernel, Schema, file_utils::cmdline_snippet};
 
 /// A cmdline entry is found in the `$sysroot/usr/lib/kernel/cmdline.d` directory
 #[derive(Debug)]

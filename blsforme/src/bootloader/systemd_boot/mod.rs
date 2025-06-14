@@ -10,10 +10,10 @@ use fs_err as fs;
 use snafu::{OptionExt as _, ResultExt as _};
 
 use crate::{
-    bootloader::{IoSnafu, MissingFileSnafu, MissingMountSnafu, PrefixSnafu},
-    file_utils::{changed_files, copy_atomic_vfat, PathExt},
-    manager::Mounts,
     Entry, Kernel, Schema,
+    bootloader::{IoSnafu, MissingFileSnafu, MissingMountSnafu, PrefixSnafu},
+    file_utils::{PathExt, changed_files, copy_atomic_vfat},
+    manager::Mounts,
 };
 
 pub mod interface;

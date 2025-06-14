@@ -10,13 +10,13 @@ use std::{
 };
 
 use fs_err as fs;
-use gpt::{partition_types, GptConfig};
+use gpt::{GptConfig, partition_types};
 use snafu::ResultExt as _;
 use topology::disk::probe::Probe;
 
 use crate::{
-    bootloader::systemd_boot::interface::{BootLoaderInterface, VariableName},
     Configuration, Error, GptSnafu, IoSnafu, Root,
+    bootloader::systemd_boot::interface::{BootLoaderInterface, VariableName},
 };
 
 /// Type of firmware detected

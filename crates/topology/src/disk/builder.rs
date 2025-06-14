@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use fs_err as fs;
 use snafu::ResultExt as _;
 
-use super::{mounts::Table, CanonicalizeSnafu};
+use super::{CanonicalizeSnafu, mounts::Table};
 use crate::disk::probe::Probe;
 
 /// Builder pattern for a Probe

@@ -11,7 +11,7 @@ use std::{
 
 use serde::Deserialize;
 
-use crate::{os_release::OsRelease, Error};
+use crate::{Error, os_release::OsRelease};
 use os_info::OsInfo;
 
 /// Control kernel discovery mechanism

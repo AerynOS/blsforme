@@ -7,13 +7,13 @@
 use std::path::{Path, PathBuf};
 
 use fs_err as fs;
-use nix::mount::{mount, umount, MsFlags};
-use snafu::{ensure, ResultExt as _};
+use nix::mount::{MsFlags, mount, umount};
+use snafu::{ResultExt as _, ensure};
 use topology::disk;
 
 use crate::{
-    bootloader::Bootloader, file_utils::cmdline_snippet, BootEnvironment, Configuration, Entry, Error, IoSnafu, Kernel,
-    NixSnafu, Root, Schema, UnmountedEspSnafu,
+    BootEnvironment, Configuration, Entry, Error, IoSnafu, Kernel, NixSnafu, Root, Schema, UnmountedEspSnafu,
+    bootloader::Bootloader, file_utils::cmdline_snippet,
 };
 
 #[derive(Debug)]

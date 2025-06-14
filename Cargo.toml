@@ -6,6 +6,9 @@ members = [
     "crates/*",
 ]
 
+[workspace.package]
+edition = "2024"
+
 [workspace.dependencies]
 blake3 = { version = "1.6.0", features = ["mmap", "rayon"] }
 log = "0.4.26"

@@ -8,7 +8,7 @@ use std::path::{PathBuf, StripPrefixError};
 
 use snafu::Snafu;
 
-use crate::{manager::Mounts, Entry, Firmware, Kernel, Schema};
+use crate::{Entry, Firmware, Kernel, Schema, manager::Mounts};
 
 pub mod systemd_boot;
 
